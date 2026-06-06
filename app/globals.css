@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f8f7f4;
+  --card: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --purple: #7F77DD;
+  --purple-dark: #534AB7;
+  --purple-light: #EEEDFE;
+  --amber: #EF9F27;
+  --amber-light: #FAEEDA;
+  --green: #1D9E75;
+  --green-light: #E1F5EE;
+  --red: #E24B4A;
+  --red-light: #FCEBEB;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
