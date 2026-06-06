@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase, Player, Match, Prediction, GlobalBet, Config } from '@/lib/supabase'
-import { calculateMatchPoints } from '@/lib/fifa'
 
 export default function JugadorPage() {
   const [players, setPlayers] = useState<Player[]>([])
@@ -10,7 +9,6 @@ export default function JugadorPage() {
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({})
   const [globalBet, setGlobalBet] = useState<Partial<GlobalBet>>({})
   const [config, setConfig] = useState<Config | null>(null)
-  const [saving, setSaving] = useState<string | null>(null)
   const [tab, setTab] = useState<'partidos' | 'global'>('partidos')
 
   useEffect(() => { loadBase() }, [])
@@ -42,21 +40,16 @@ export default function JugadorPage() {
     if (!selectedPlayer) return
     const existing = predictions[matchId]
     const updated = { ...existing, player_id: selectedPlayer, match_id: matchId, [field]: value }
-
     const { data, error } = await supabase
       .from('predictions')
       .upsert({ ...updated, points_earned: 0 }, { onConflict: 'player_id,match_id' })
       .select()
       .single()
-
-    if (!error && data) {
-      setPredictions(prev => ({ ...prev, [matchId]: data }))
-    }
+    if (!error && data) setPredictions(prev => ({ ...prev, [matchId]: data }))
   }
 
   async function saveGlobalBet(field: string, value: string) {
     if (!selectedPlayer) return
-    setSaving('global')
     const updated = { ...globalBet, player_id: selectedPlayer, [field]: value }
     const { data } = await supabase
       .from('global_bets')
@@ -64,19 +57,33 @@ export default function JugadorPage() {
       .select()
       .single()
     if (data) setGlobalBet(data)
-    setSaving(null)
+  }
+
+  // Favorito = mejor ranking FIFA (número más bajo)
+  function getFavorite(m: Match): 'home' | 'away' | null {
+    if (!m.home_ranking || !m.away_ranking) return null
+    return m.home_ranking < m.away_ranking ? 'home' : 'away'
+  }
+
+  function getFavoriteTeam(m: Match): string | null {
+    const fav = getFavorite(m)
+    if (!fav) return null
+    return fav === 'home' ? m.home : m.away
+  }
+
+  function getUnderdogTeam(m: Match): string | null {
+    const fav = getFavorite(m)
+    if (!fav) return null
+    return fav === 'home' ? m.away : m.home
   }
 
   const pendingMatches = matches.filter(m => m.result_home === null)
   const playedMatches = matches.filter(m => m.result_home !== null)
 
-  const player = players.find(p => p.id === selectedPlayer)
-
   return (
     <div>
       <h1 className="text-2xl font-medium text-gray-900 mb-6">Mis apuestas</h1>
 
-      {/* Player selector */}
       <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
         <label className="text-sm text-gray-500 block mb-2">Selecciona tu nombre</label>
         <select
@@ -95,7 +102,6 @@ export default function JugadorPage() {
 
       {selectedPlayer && (
         <>
-          {/* Tabs */}
           <div className="flex gap-1 border-b border-gray-200 mb-6">
             <button onClick={() => setTab('partidos')}
               className={`px-4 py-2 text-sm border-b-2 -mb-px ${tab === 'partidos' ? 'border-purple-500 text-purple-700 font-medium' : 'border-transparent text-gray-500'}`}>
@@ -115,11 +121,15 @@ export default function JugadorPage() {
               <div className="space-y-4">
                 {pendingMatches.map(m => {
                   const pred = predictions[m.id] ?? {}
-                  const udTeam = m.underdog === 'home' ? m.home : m.underdog === 'away' ? m.away : null
+                  const favTeam = getFavoriteTeam(m)
+                  const udTeam = getUnderdogTeam(m)
+                  const homeIsFav = m.home_ranking && m.away_ranking && m.home_ranking < m.away_ranking
+                  const awayIsFav = m.home_ranking && m.away_ranking && m.away_ranking < m.home_ranking
+
                   return (
                     <div key={m.id} className="bg-white rounded-xl border border-gray-100 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{m.phase}</span>
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{m.phase}</span>
                         {m.match_date && (
                           <span className="text-xs text-gray-400">
                             {new Date(m.match_date).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -127,60 +137,77 @@ export default function JugadorPage() {
                         )}
                       </div>
 
+                      {/* Equipos con rankings */}
                       <div className="grid grid-cols-3 gap-2 items-center mb-4">
                         <div className="text-center">
-                          <div className="font-medium text-sm text-gray-900">{m.home}</div>
-                          {m.home_ranking && <div className="text-xs text-gray-400">#{m.home_ranking} FIFA</div>}
-                          {m.underdog === 'home' && <div className="text-xs text-amber-600 font-medium">⚡ No favorito</div>}
+                          <div className="font-semibold text-sm text-gray-900 mb-1">{m.home}</div>
+                          {m.home_ranking && (
+                            <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${homeIsFav ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                              #{m.home_ranking} FIFA {homeIsFav ? '⭐ Favorito' : '⚡ No fav'}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-center text-gray-400 text-xs font-medium">VS</div>
+                        <div className="text-center text-gray-300 font-medium text-sm">vs</div>
                         <div className="text-center">
-                          <div className="font-medium text-sm text-gray-900">{m.away}</div>
-                          {m.away_ranking && <div className="text-xs text-gray-400">#{m.away_ranking} FIFA</div>}
-                          {m.underdog === 'away' && <div className="text-xs text-amber-600 font-medium">⚡ No favorito</div>}
+                          <div className="font-semibold text-sm text-gray-900 mb-1">{m.away}</div>
+                          {m.away_ranking && (
+                            <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${awayIsFav ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                              #{m.away_ranking} FIFA {awayIsFav ? '⭐ Favorito' : '⚡ No fav'}
+                            </div>
+                          )}
                         </div>
                       </div>
 
+                      {/* Bonus info */}
                       {udTeam && (
-                        <div className="text-xs bg-amber-50 text-amber-700 rounded-lg px-3 py-2 mb-3">
-                          ⚡ Si apostás a <strong>{udTeam}</strong> y acertás, ganás puntos bonus
+                        <div className="text-xs bg-amber-50 border border-amber-100 text-amber-700 rounded-lg px-3 py-2 mb-4">
+                          ⚡ Si apostás a <strong>{udTeam}</strong> y acertás, ganás el doble de puntos
                         </div>
                       )}
 
-                      <div className="mb-3">
-                        <div className="text-xs text-gray-500 mb-2">¿Quién gana?</div>
+                      {/* Selección ganador */}
+                      <div className="mb-4">
+                        <div className="text-xs text-gray-500 mb-2 font-medium">¿Quién gana?</div>
                         <div className="flex gap-2">
                           {(['home', 'draw', 'away'] as const).map(opt => {
                             const label = opt === 'home' ? m.home : opt === 'away' ? m.away : 'Empate'
-                            const isUd = (opt === 'home' && m.underdog === 'home') || (opt === 'away' && m.underdog === 'away')
+                            const isUd = (opt === 'home' && !homeIsFav) || (opt === 'away' && !awayIsFav)
                             return (
                               <button key={opt}
-                                onClick={() => savePrediction(m.id, 'picked_team', opt)}
-                                className={`flex-1 text-xs py-2 px-1 rounded-lg border transition-all ${pred.picked_team === opt
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
-                                  }`}>
-                                {label}{isUd ? ' ⚡' : ''}
+                                onClick={() => savePrediction(m.id, 'picked_team', pred.picked_team === opt ? null : opt)}
+                                className={`flex-1 text-xs py-2.5 px-1 rounded-lg border transition-all ${
+                                  pred.picked_team === opt
+                                    ? 'bg-purple-600 text-white border-purple-600 font-medium'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                }`}>
+                                {label}{opt !== 'draw' && isUd ? ' ⚡' : ''}
                               </button>
                             )
                           })}
                         </div>
                       </div>
 
+                      {/* Marcador exacto */}
                       <div>
-                        <div className="text-xs text-gray-500 mb-2">Marcador exacto (opcional, da más puntos)</div>
+                        <div className="text-xs text-gray-500 mb-2 font-medium">Marcador exacto <span className="text-gray-400 font-normal">(opcional, da más puntos)</span></div>
                         <div className="flex items-center gap-3">
-                          <input type="number" min="0" max="20"
-                            placeholder="0"
-                            defaultValue={pred.home_goals ?? ''}
-                            onBlur={e => savePrediction(m.id, 'home_goals', e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center" />
-                          <span className="text-gray-400 text-sm">-</span>
-                          <input type="number" min="0" max="20"
-                            placeholder="0"
-                            defaultValue={pred.away_goals ?? ''}
-                            onBlur={e => savePrediction(m.id, 'away_goals', e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center" />
+                          <div className="text-center">
+                            <div className="text-xs text-gray-400 mb-1">{m.home}</div>
+                            <input type="number" min="0" max="20"
+                              placeholder="0"
+                              defaultValue={pred.home_goals ?? ''}
+                              onBlur={e => savePrediction(m.id, 'home_goals', e.target.value !== '' ? parseInt(e.target.value) : null)}
+                              className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
+                          </div>
+                          <span className="text-gray-300 text-lg mt-4">-</span>
+                          <div className="text-center">
+                            <div className="text-xs text-gray-400 mb-1">{m.away}</div>
+                            <input type="number" min="0" max="20"
+                              placeholder="0"
+                              defaultValue={pred.away_goals ?? ''}
+                              onBlur={e => savePrediction(m.id, 'away_goals', e.target.value !== '' ? parseInt(e.target.value) : null)}
+                              className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -188,6 +215,7 @@ export default function JugadorPage() {
                 })}
               </div>
 
+              {/* Partidos jugados */}
               {playedMatches.length > 0 && (
                 <div className="mt-8">
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Partidos jugados</h2>
@@ -201,11 +229,13 @@ export default function JugadorPage() {
                             <div>
                               <div className="text-sm font-medium text-gray-900">{m.home} vs {m.away}</div>
                               <div className="text-xs text-gray-400 mt-0.5">
-                                Resultado: {m.result_home} - {m.result_away} ·{' '}
-                                {pred ? `${pred.picked_team === 'home' ? m.home : pred.picked_team === 'away' ? m.away : 'Empate'}${pred.home_goals !== null ? ` (${pred.home_goals}-${pred.away_goals})` : ''}` : 'Sin predicción'}
+                                Resultado: <strong>{m.result_home} - {m.result_away}</strong> ·{' '}
+                                {pred
+                                  ? `${pred.picked_team === 'home' ? m.home : pred.picked_team === 'away' ? m.away : 'Empate'}${pred.home_goals !== null ? ` (${pred.home_goals}-${pred.away_goals})` : ''}`
+                                  : 'Sin predicción'}
                               </div>
                             </div>
-                            <div className={`font-semibold text-lg ${pts > 0 ? 'text-green-600' : 'text-gray-300'}`}>
+                            <div className={`font-bold text-xl ${pts > 0 ? 'text-green-600' : 'text-gray-200'}`}>
                               +{pts}
                             </div>
                           </div>
@@ -220,8 +250,7 @@ export default function JugadorPage() {
 
           {tab === 'global' && (
             <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <p className="text-sm text-gray-500 mb-6">Estas apuestas se hacen antes del mundial y se resuelven al final. Una vez que el torneo empieza, ya no se pueden cambiar.</p>
-
+              <p className="text-sm text-gray-500 mb-6">Estas apuestas se hacen antes del mundial y se resuelven al final. Una sola apuesta por categoría.</p>
               {[
                 { field: 'champion', label: '🏆 Campeón del mundo', placeholder: 'Ej: Argentina', pts: config?.champion_pts ?? 20 },
                 { field: 'scorer', label: '⚽ Goleador del torneo', placeholder: 'Ej: Mbappé', pts: config?.scorer_pts ?? 15 },
@@ -231,7 +260,7 @@ export default function JugadorPage() {
                 <div key={field} className="mb-5">
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-sm font-medium text-gray-700">{label}</label>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{pts} pts si acertás</span>
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{pts} pts</span>
                   </div>
                   <input
                     type="text"
@@ -242,7 +271,7 @@ export default function JugadorPage() {
                   />
                 </div>
               ))}
-              <p className="text-xs text-gray-400 mt-2">Los cambios se guardan automáticamente al salir de cada campo</p>
+              <p className="text-xs text-gray-400">Se guarda automáticamente al salir de cada campo</p>
             </div>
           )}
         </>
