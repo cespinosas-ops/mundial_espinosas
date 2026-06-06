@@ -161,7 +161,7 @@ export default function JugadorPage() {
                       {/* Bonus info */}
                       {udTeam && (
                         <div className="text-xs bg-amber-50 border border-amber-100 text-amber-700 rounded-lg px-3 py-2 mb-4">
-                          ⚡ Si apostás a <strong>{udTeam}</strong> y acertás, ganás el doble de puntos
+                          ⚡ Si apostás a <strong>{udTeam}</strong> y acertás, ganás puntos extra por ser el no favorito
                         </div>
                       )}
 
@@ -189,7 +189,7 @@ export default function JugadorPage() {
 
                       {/* Marcador exacto */}
                       <div>
-                        <div className="text-xs text-gray-500 mb-2 font-medium">Marcador exacto <span className="text-gray-400 font-normal">(opcional, da más puntos)</span></div>
+                        <div className="text-xs text-gray-500 mb-2 font-medium">Marcador exacto</div>
                         <div className="flex items-center gap-3">
                           <div className="text-center">
                             <div className="text-xs text-gray-400 mb-1">{m.home}</div>
