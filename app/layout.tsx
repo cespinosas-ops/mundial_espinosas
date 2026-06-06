@@ -19,7 +19,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex gap-4 text-sm">
               <Link href="/" className="text-gray-600 hover:text-gray-900">Tabla</Link>
               <Link href="/jugador" className="text-gray-600 hover:text-gray-900">Mis apuestas</Link>
-              <Link href="/reglas" className="text-gray-600 hover:text-gray-900">Reglas</Link>
               <Link href="/admin" className="text-gray-600 hover:text-gray-900">Admin</Link>
             </div>
           </div>
