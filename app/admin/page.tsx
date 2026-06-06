@@ -96,6 +96,12 @@ export default function AdminPage() {
     load()
   }
 
+  async function clearResult(matchId: string) {
+    await supabase.from('matches').update({ result_home: null, result_away: null }).eq('id', matchId)
+    await supabase.from('predictions').update({ points_earned: 0 }).eq('match_id', matchId)
+    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, result_home: null, result_away: null } : m))
+  }
+
   async function saveConfig() {
     await supabase.from('config').upsert(config)
     setCfgSaved(true)
@@ -133,7 +139,7 @@ export default function AdminPage() {
     const [h, setH] = useState(match.result_home?.toString() ?? '')
     const [a, setA] = useState(match.result_away?.toString() ?? '')
     return (
-      <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
         <input type="number" min="0" value={h} onChange={e => setH(e.target.value)}
           className="w-12 border border-gray-200 rounded px-2 py-1 text-sm text-center" />
         <span className="text-gray-400">-</span>
@@ -143,6 +149,12 @@ export default function AdminPage() {
           className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700">
           Guardar
         </button>
+        {match.result_home !== null && (
+          <button onClick={() => { clearResult(match.id); setH(''); setA('') }}
+            className="text-xs text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">
+            Borrar resultado
+          </button>
+        )}
       </div>
     )
   }
