@@ -10,14 +10,20 @@ export default function ApuestasPage() {
   const [matches, setMatches] = useState<MatchWithPreds[]>([])
   const [selected, setSelected] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [globalBets, setGlobalBets] = useState<any[]>([])
+  const [tab, setTab] = useState<'partidos' | 'globales'>('partidos')
 
   useEffect(() => {
     async function load() {
-      const [{ data: m }, { data: preds }, { data: players }] = await Promise.all([
+      const [{ data: m }, { data: preds }, { data: players }, { data: gb }] = await Promise.all([
         supabase.from('matches').select('*').order('match_date', { ascending: true }),
         supabase.from('predictions').select('*'),
         supabase.from('players').select('*'),
+        supabase.from('global_bets').select('*'),
       ])
+      if (gb && players) {
+        setGlobalBets(gb.map(g => ({ ...g, player: players.find(p => p.id === g.player_id) })).filter(g => g.player))
+      }
       if (!m || !preds || !players) return
       const enriched: MatchWithPreds[] = m.map(match => ({
         ...match,
@@ -49,7 +55,53 @@ export default function ApuestasPage() {
         <p className="text-sm text-gray-500">Selecciona un partido para ver todas las predicciones</p>
       </div>
       {loading ? <div className="text-gray-400 text-sm">Cargando...</div> : (
-        <div className="flex gap-4 items-start">
+        <div className="flex gap-1 border-b border-gray-200 mb-6">
+          <button onClick={() => setTab('partidos')}
+            className={"px-4 py-2 text-sm border-b-2 -mb-px " + (tab === 'partidos' ? 'border-purple-500 text-purple-700 font-medium' : 'border-transparent text-gray-500')}>
+            Por partido
+          </button>
+          <button onClick={() => setTab('globales')}
+            className={"px-4 py-2 text-sm border-b-2 -mb-px " + (tab === 'globales' ? 'border-purple-500 text-purple-700 font-medium' : 'border-transparent text-gray-500')}>
+            Apuestas globales
+          </button>
+        </div>
+
+        {tab === 'globales' && (
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <p className="text-sm text-gray-500 mb-4">Apuestas de cada jugador antes del mundial</p>
+            {globalBets.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 text-sm">Nadie ha hecho apuestas globales aún</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left text-xs text-gray-400 font-medium py-2 pr-4">Jugador</th>
+                    <th className="text-left text-xs text-gray-400 font-medium py-2 pr-4">🏆 Campeón</th>
+                    <th className="text-left text-xs text-gray-400 font-medium py-2 pr-4">⚽ Goleador</th>
+                    <th className="text-left text-xs text-gray-400 font-medium py-2">🧤 Arquero</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {globalBets.map(gb => (
+                    <tr key={gb.id} className="border-b border-gray-50 last:border-0">
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-2">
+                          <span>{gb.player.emoji}</span>
+                          <span className="font-medium text-gray-900">{gb.player.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-600">{gb.champion || <span className="text-gray-300">—</span>}</td>
+                      <td className="py-3 pr-4 text-gray-600">{gb.scorer || <span className="text-gray-300">—</span>}</td>
+                      <td className="py-3 text-gray-600">{gb.keeper || <span className="text-gray-300">—</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {tab === 'partidos' && <div className="flex gap-4 items-start">
           <div className="w-60 shrink-0 max-h-[80vh] overflow-y-auto space-y-0.5">
             {phases.map(phase => (
               <div key={phase}>
@@ -126,7 +178,7 @@ export default function ApuestasPage() {
             )}
           </div>
         </div>
-      )}
+      </div>}
     </div>
   )
 }
