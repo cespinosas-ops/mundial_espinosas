@@ -8,12 +8,15 @@ const ADMIN_PIN = '1926'
 export default function LoginPage() {
   const router = useRouter()
   const [players, setPlayers] = useState<Player[]>([])
-  const [step, setStep] = useState<'select' | 'pin' | 'create'>('select')
+  const [step, setStep] = useState<'select' | 'pin' | 'create' | 'register'>('select')
   const [selected, setSelected] = useState<Player | null>(null)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [adminPin, setAdminPin] = useState('')
   const [showAdmin, setShowAdmin] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newEmoji, setNewEmoji] = useState('')
+  const [newPin, setNewPin] = useState('')
 
   useEffect(() => {
     // Si ya hay sesión, redirigir
@@ -56,6 +59,21 @@ export default function LoginPage() {
     router.push('/jugador')
   }
 
+  async function handleRegister() {
+    if (!newName.trim()) { setError('Ingresa un nombre'); return }
+    if (newPin.length !== 4) { setError('El PIN debe tener 4 dígitos'); return }
+    const emoji = newEmoji.trim() || '👤'
+    const { data, error } = await supabase
+      .from('players')
+      .insert({ name: newName.trim(), emoji, pin: newPin })
+      .select().single()
+    if (error || !data) { setError('Error al crear jugador'); return }
+    const session = { playerId: data.id, playerName: data.name, playerEmoji: data.emoji, isAdmin: false }
+    localStorage.setItem('mundial_session', JSON.stringify(session))
+    window.dispatchEvent(new Event('session_changed'))
+    router.push('/jugador')
+  }
+
   function handleAdminLogin() {
     if (adminPin === ADMIN_PIN) {
       const session = { playerId: 'admin', playerName: 'Admin', playerEmoji: '👑', isAdmin: true }
@@ -88,6 +106,11 @@ export default function LoginPage() {
             ))}
           </div>
 
+          <button onClick={() => { setStep('register'); setError('') }}
+            className="w-full text-left px-4 py-3 bg-purple-50 border border-purple-100 rounded-xl hover:bg-purple-100 transition-all mb-4">
+            <div className="font-medium text-purple-700 text-sm">+ Crear nuevo jugador</div>
+            <div className="text-xs text-purple-500 mt-0.5">Únete al torneo con tu propio nombre y PIN</div>
+          </button>
           <div className="border-t border-gray-100 pt-4">
             <button onClick={() => setShowAdmin(!showAdmin)}
               className="text-xs text-gray-400 hover:text-gray-600">
@@ -135,6 +158,40 @@ export default function LoginPage() {
             Entrar
           </button>
           <button onClick={() => { setStep('select'); setSelected(null); setError('') }}
+            className="w-full text-gray-400 text-sm py-2 hover:text-gray-600">
+            Volver
+          </button>
+        </div>
+      )}
+
+      {step === 'register' && (
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="text-base font-medium text-gray-900 mb-4">Crear nuevo jugador</h2>
+          <div className="mb-4">
+            <label className="text-sm text-gray-600 block mb-1">Nombre</label>
+            <input type="text" placeholder="Ej: Cristóbal" value={newName}
+              onChange={e => { setNewName(e.target.value); setError('') }}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" autoFocus />
+          </div>
+          <div className="mb-4">
+            <label className="text-sm text-gray-600 block mb-1">Emoji (opcional)</label>
+            <input type="text" placeholder="🦁" value={newEmoji} maxLength={2}
+              onChange={e => setNewEmoji(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center text-xl" />
+          </div>
+          <div className="mb-4">
+            <label className="text-sm text-gray-600 block mb-1">PIN de 4 dígitos</label>
+            <input type="password" inputMode="numeric" maxLength={4} placeholder="• • • •"
+              value={newPin} onChange={e => { setNewPin(e.target.value); setError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleRegister()}
+              className="w-full border border-gray-200 rounded-lg px-3 py-3 text-center text-xl tracking-widest" />
+          </div>
+          {error && <p className="text-xs text-red-500 mb-3 text-center">{error}</p>}
+          <button onClick={handleRegister}
+            className="w-full bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 mb-2">
+            Crear jugador y entrar
+          </button>
+          <button onClick={() => { setStep('select'); setError('') }}
             className="w-full text-gray-400 text-sm py-2 hover:text-gray-600">
             Volver
           </button>
