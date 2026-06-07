@@ -9,6 +9,7 @@ export type Player = {
   id: string
   name: string
   emoji: string
+  pin: string | null
   created_at: string
 }
 
