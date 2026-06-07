@@ -1,4 +1,5 @@
 'use client'
+// v2 session isolated
 import { useEffect, useState } from 'react'
 import { supabase, Player, Match, Prediction, GlobalBet, Config } from '@/lib/supabase'
 
