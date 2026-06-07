@@ -12,7 +12,7 @@ export default function JugadorPage() {
   const [tab, setTab] = useState<'partidos' | 'global'>('partidos')
 
   useEffect(() => { loadBase() }, [])
-  useEffect(() => { if (selectedPlayer) loadPlayerData() }, [selectedPlayer])
+  useEffect(() => { if (selectedPlayer) loadPlayerData() }, [selectedPlayer]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadBase() {
     const [{ data: pl }, { data: m }, { data: cfg }] = await Promise.all([
@@ -46,12 +46,6 @@ export default function JugadorPage() {
       .select()
       .single()
     if (!error && data) setPredictions(prev => ({ ...prev, [matchId]: data }))
-  }
-
-  async function clearPrediction(matchId: string) {
-    if (!selectedPlayer) return
-    await supabase.from('predictions').delete().eq('player_id', selectedPlayer).eq('match_id', matchId)
-    setPredictions(prev => { const n = {...prev}; delete n[matchId]; return n })
   }
 
   async function saveGlobalBet(field: string, value: string) {
@@ -215,12 +209,6 @@ export default function JugadorPage() {
                               className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
                           </div>
                         </div>
-                      </div>
-                      <div className="mt-3 flex justify-end">
-                        <button onClick={() => clearPrediction(m.id)}
-                          className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-3 py-1 rounded-lg transition-all">
-                          Eliminar mi apuesta
-                        </button>
                       </div>
                     </div>
                   )
