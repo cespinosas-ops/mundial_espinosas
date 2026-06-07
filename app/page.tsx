@@ -90,7 +90,7 @@ export default function Home() {
               <tr className="border-b border-gray-100">
                 <th className="text-left text-xs text-gray-400 font-medium px-4 py-3">#</th>
                 <th className="text-left text-xs text-gray-400 font-medium px-4 py-3">Jugador</th>
-                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Partidos</th>
+                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Pts partidos</th>
                 <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Globales</th>
                 <th className="text-right text-xs text-gray-400 font-medium px-4 py-3 hidden sm:table-cell">Exactos</th>
                 <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Total</th>
