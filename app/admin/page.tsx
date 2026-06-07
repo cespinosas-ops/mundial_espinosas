@@ -123,7 +123,6 @@ export default function AdminPage() {
       if (globalResults.champion && bet.champion?.toLowerCase() === globalResults.champion.toLowerCase()) pts += config.champion_pts
       if (globalResults.scorer && bet.scorer?.toLowerCase() === globalResults.scorer.toLowerCase()) pts += config.scorer_pts
       if (globalResults.keeper && bet.keeper?.toLowerCase() === globalResults.keeper.toLowerCase()) pts += config.keeper_pts
-      if (globalResults.mvp && bet.mvp?.toLowerCase() === globalResults.mvp.toLowerCase()) pts += config.mvp_pts
       await supabase.from('global_bets').update({ points_earned: pts }).eq('id', bet.id)
     }
     alert('✓ Puntos globales calculados')

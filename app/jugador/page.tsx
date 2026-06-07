@@ -248,7 +248,6 @@ export default function JugadorPage() {
             { field: 'champion', label: '🏆 Campeón del mundo', placeholder: 'Ej: Argentina', pts: config?.champion_pts ?? 20 },
             { field: 'scorer', label: '⚽ Goleador del torneo', placeholder: 'Ej: Mbappé', pts: config?.scorer_pts ?? 15 },
             { field: 'keeper', label: '🧤 Mejor arquero', placeholder: 'Ej: Courtois', pts: config?.keeper_pts ?? 10 },
-            { field: 'mvp', label: '🌟 Balón de Oro', placeholder: 'Ej: Messi', pts: config?.mvp_pts ?? 10 },
           ] as const).map(({ field, label, placeholder, pts }) => (
             <div key={field} className="mb-5">
               <div className="flex items-center justify-between mb-1.5">

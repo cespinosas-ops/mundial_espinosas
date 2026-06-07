@@ -38,12 +38,13 @@ export default function ReglasPage() {
 
       <div className="bg-gray-50 rounded-xl p-5 text-sm text-gray-600 space-y-2">
         <p className="font-medium text-gray-900 mb-3">📋 Reglas generales</p>
-        <p>• Si no acertás al ganador, no ganás puntos aunque el marcador sea correcto.</p>
-        <p>• El marcador exacto solo da puntos adicionales si también acertaste al ganador.</p>
-        <p>• El no favorito se define por ranking FIFA oficial al inicio del torneo. En fases eliminatorias el admin puede ajustarlo manualmente.</p>
-        <p>• En partidos sin favorito definido (knockout), todos ganan los mismos puntos sin bonus.</p>
-        <p>• Las apuestas globales se cierran al inicio del torneo y no se pueden modificar.</p>
-        <p>• Las predicciones por partido se pueden modificar hasta que el admin ingrese el resultado.</p>
+        <p>• Si acertás el marcador exacto, ganás los puntos máximos — esto incluye automáticamente acertar al ganador.</p>
+        <p>• Si no acertás el marcador pero sí el ganador (o el empate), ganás puntos parciales.</p>
+        <p>• Si no acertás al ganador, no acertás el marcador automáticamente y no ganás puntos.</p>
+        <p>• El no favorito se define por ranking FIFA oficial. Apostar al no favorito y acertar da más puntos que apostar al favorito.</p>
+        <p>• En fases eliminatorias, el bonus de no favorito estará por decidirse partido a partido.</p>
+        <p>• Las predicciones por partido se pueden modificar hasta 20 minutos antes del partido.</p>
+        <p>• Las apuestas globales (campeón, goleador, arquero) se hacen antes del mundial y no se pueden cambiar una vez iniciado.</p>
       </div>
 
       <Section title="🏆 Apuestas globales — antes del mundial">
