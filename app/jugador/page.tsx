@@ -15,16 +15,32 @@ export default function JugadorPage() {
   const [tab, setTab] = useState<'partidos' | 'global'>('partidos')
   const [now, setNow] = useState(new Date())
   const [loaded, setLoaded] = useState(false)
+  const [players, setPlayers] = useState<any[]>([])
+  const [adminTarget, setAdminTarget] = useState<string>('')
 
   useEffect(() => {
     const stored = localStorage.getItem('mundial_session')
     if (!stored) { router.push('/login'); return }
     const s: Session = JSON.parse(stored)
     setSession(s)
+    if (s.isAdmin) {
+      supabase.from('players').select('*').order('name').then(({data}) => setPlayers(data ?? []))
+    }
     loadAll(s.playerId)
     const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadPlayer(pid: string) {
+    const [{ data: preds }, { data: gb }] = await Promise.all([
+      supabase.from('predictions').select('*').eq('player_id', pid),
+      supabase.from('global_bets').select('*').eq('player_id', pid).maybeSingle(),
+    ])
+    const predMap: Record<string, Prediction> = {}
+    preds?.forEach(p => { predMap[p.match_id] = p })
+    setPredictions(predMap)
+    setGlobalBet(gb ?? {})
+  }
 
   async function loadAll(playerId: string) {
     const [{ data: m }, { data: cfg }, { data: preds }, { data: gb }] = await Promise.all([
@@ -42,6 +58,10 @@ export default function JugadorPage() {
     setLoaded(true)
   }
 
+  useEffect(() => {
+    if (adminTarget) loadPlayer(adminTarget)
+  }, [adminTarget]) // eslint-disable-line react-hooks/exhaustive-deps
+
   function isLocked(m: Match) {
     if (!m.match_date || !session) return false
     if (session.isAdmin) return false
@@ -51,8 +71,9 @@ export default function JugadorPage() {
 
   async function savePrediction(matchId: string, field: string, value: string | number | null) {
     if (!session) return
+    const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
     const existing = predictions[matchId]
-    const updated = { ...existing, player_id: session.playerId, match_id: matchId, [field]: value }
+    const updated = { ...existing, player_id: targetId, match_id: matchId, [field]: value }
     const { data, error } = await supabase
       .from('predictions')
       .upsert({ ...updated, points_earned: 0 }, { onConflict: 'player_id,match_id' })
@@ -62,13 +83,15 @@ export default function JugadorPage() {
 
   async function clearPrediction(matchId: string) {
     if (!session) return
-    await supabase.from('predictions').delete().eq('player_id', session.playerId).eq('match_id', matchId)
+    const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
+    await supabase.from('predictions').delete().eq('player_id', targetId).eq('match_id', matchId)
     setPredictions(prev => { const n = { ...prev }; delete n[matchId]; return n })
   }
 
   async function saveGlobalBet(field: string, value: string) {
     if (!session) return
-    const updated = { ...globalBet, player_id: session.playerId, [field]: value }
+    const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
+    const updated = { ...globalBet, player_id: targetId, [field]: value }
     const { data } = await supabase
       .from('global_bets')
       .upsert({ ...updated, points_earned: 0 }, { onConflict: 'player_id' })
@@ -97,8 +120,14 @@ export default function JugadorPage() {
       </div>
 
       {session.isAdmin && (
-        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-2 mb-4 text-sm text-amber-700">
-          👑 Modo admin — editando sin restricciones de tiempo
+        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4 text-sm text-amber-700 space-y-2">
+          <div>👑 Modo admin — sin restricciones de tiempo</div>
+          <select value={adminTarget} onChange={e => { setAdminTarget(e.target.value); if(!e.target.value) { setPredictions({}); setGlobalBet({}) } }}
+            className="w-full border border-amber-200 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-900">
+            <option value="">— Ver mis propias apuestas de admin —</option>
+            {players.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
+          </select>
+          {adminTarget && <div className="text-xs text-amber-600">Editando apuestas de: <strong>{players.find(p=>p.id===adminTarget)?.name}</strong></div>}
         </div>
       )}
 

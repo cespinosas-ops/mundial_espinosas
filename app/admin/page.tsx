@@ -7,6 +7,13 @@ type Tab = 'jugadores' | 'partidos' | 'config' | 'resultados' | 'globales'
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('jugadores')
+
+  useEffect(() => {
+    const stored = localStorage.getItem('mundial_session')
+    if (!stored) { window.location.href = '/login'; return }
+    const s = JSON.parse(stored)
+    if (!s.isAdmin) { window.location.href = '/'; return }
+  }, [])
   const [players, setPlayers] = useState<Player[]>([])
   const [matches, setMatches] = useState<Match[]>([])
   const [config, setConfig] = useState<Config>({
