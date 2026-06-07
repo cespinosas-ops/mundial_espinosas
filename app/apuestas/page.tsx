@@ -34,7 +34,7 @@ export default function ApuestasPage() {
   }, [])
 
   const match = matches.find(m => m.id === selected)
-  const phases = [...new Set(matches.map(m => m.phase))]
+  const phases = Array.from(new Set(matches.map(m => m.phase)))
 
   function pickLabel(pred: Prediction, match: Match) {
     if (pred.picked_team === 'home') return match.home
