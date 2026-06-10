@@ -185,7 +185,7 @@ export default function JugadorPage() {
                             const isUd = (opt === 'home' && !homeIsFav) || (opt === 'away' && !awayIsFav)
                             return (
                               <button key={opt}
-                                onClick={() => savePrediction(m.id, 'picked_team', pred.picked_team === opt ? null : opt)}
+                                onClick={() => { savePrediction(m.id, 'picked_team', pred.picked_team === opt ? null : opt); if (pred.picked_team !== opt && pred.home_goals === null) { setTimeout(() => { savePrediction(m.id, 'home_goals', 0); savePrediction(m.id, 'away_goals', 0) }, 100) } }}
                                 className={"flex-1 text-xs py-2.5 px-1 rounded-lg border transition-all " + (pred.picked_team === opt ? 'bg-purple-600 text-white border-purple-600 font-medium' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300')}>
                                 {label}{opt !== 'draw' && isUd ? ' ⚡' : ''}
                               </button>
