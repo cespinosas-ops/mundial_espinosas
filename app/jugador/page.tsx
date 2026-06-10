@@ -198,12 +198,12 @@ export default function JugadorPage() {
                         <div className="flex items-center gap-3">
                           <div className="text-center">
                             <div className="text-xs text-gray-400 mb-1">{m.home}</div>
-                            <input type="number" min="0" max="20" placeholder="0" defaultValue={pred.home_goals ?? ''} onBlur={e => savePrediction(m.id, 'home_goals', e.target.value !== '' ? parseInt(e.target.value) : null)} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
+                            <input key={m.id + '_home_' + (predictions[m.id] ? '1' : '0')} type="number" min="0" max="20" placeholder="0" defaultValue={pred.home_goals ?? ''} onBlur={e => savePrediction(m.id, 'home_goals', e.target.value !== '' ? parseInt(e.target.value) : 0)} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
                           </div>
                           <span className="text-gray-300 text-lg mt-4">-</span>
                           <div className="text-center">
                             <div className="text-xs text-gray-400 mb-1">{m.away}</div>
-                            <input type="number" min="0" max="20" placeholder="0" defaultValue={pred.away_goals ?? ''} onBlur={e => savePrediction(m.id, 'away_goals', e.target.value !== '' ? parseInt(e.target.value) : null)} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
+                            <input key={m.id + '_away_' + (predictions[m.id] ? '1' : '0')} type="number" min="0" max="20" placeholder="0" defaultValue={pred.away_goals ?? ''} onBlur={e => savePrediction(m.id, 'away_goals', e.target.value !== '' ? parseInt(e.target.value) : 0)} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
                           </div>
                         </div>
                       </div>
