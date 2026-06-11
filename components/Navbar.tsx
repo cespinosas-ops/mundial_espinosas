@@ -72,7 +72,9 @@ export default function Navbar() {
   const nextMatches = upcomingMatches.filter(m => {
     const matchTime = new Date(m.match_date).getTime()
     const diff = matchTime - now.getTime()
-    return diff > 0 && diff < 24 * 60 * 60 * 1000
+    const timeSinceStart = now.getTime() - matchTime
+    // Show if: within 24h before start, OR within 2h after start
+    return diff < 24 * 60 * 60 * 1000 && timeSinceStart < 2 * 60 * 60 * 1000
   }).slice(0, 3)
 
   function formatCountdown(matchDate: string) {
@@ -105,7 +107,7 @@ export default function Navbar() {
       {/* Barra de countdown */}
       {nextMatches.length > 0 && (
         <div className="bg-gray-900 text-white text-xs px-4 py-1.5 flex items-center gap-4 overflow-x-auto">
-          <span className="text-gray-400 shrink-0">Próximos:</span>
+          <span className="text-gray-400 shrink-0">⏱ Cierre apuestas:</span>
           {nextMatches.map(m => {
             const locked = isLocked(m.match_date)
             return (
