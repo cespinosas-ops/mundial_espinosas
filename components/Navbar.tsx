@@ -84,7 +84,7 @@ export default function Navbar() {
     const h = Math.floor(diff / 3600000)
     const m = Math.floor((diff % 3600000) / 60000)
     const s = Math.floor((diff % 60000) / 1000)
-    if (h > 0) return `${h}h ${m}m`
+    if (h > 0) return `${h}h ${m}m ${s}s`
     if (m > 0) return `${m}m ${s}s`
     return `${s}s`
   }
