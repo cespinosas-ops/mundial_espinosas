@@ -76,8 +76,9 @@ export default function Navbar() {
   }).slice(0, 3)
 
   function formatCountdown(matchDate: string) {
-    const diff = new Date(matchDate).getTime() - now.getTime()
-    if (diff <= 0) return 'En curso'
+    const lockTime = new Date(matchDate).getTime() - 20 * 60 * 1000
+    const diff = lockTime - now.getTime()
+    if (diff <= 0) return 'CERRADO'
     const h = Math.floor(diff / 3600000)
     const m = Math.floor((diff % 3600000) / 60000)
     const s = Math.floor((diff % 60000) / 1000)
@@ -88,7 +89,7 @@ export default function Navbar() {
 
   function isLocked(matchDate: string) {
     const diff = new Date(matchDate).getTime() - now.getTime()
-    return diff < 20 * 60 * 1000 // 20 minutos
+    return diff < 20 * 60 * 1000
   }
 
   const links = [

@@ -15,6 +15,7 @@ export default function JugadorPage() {
   const [tab, setTab] = useState<'partidos' | 'global'>('partidos')
   const [now, setNow] = useState(new Date())
   const [loaded, setLoaded] = useState(false)
+  const [globalLocked, setGlobalLocked] = useState(false)
   const [players, setPlayers] = useState<any[]>([])
   const [adminTarget, setAdminTarget] = useState<string>('')
 
@@ -49,7 +50,13 @@ export default function JugadorPage() {
       supabase.from('predictions').select('*').eq('player_id', playerId),
       supabase.from('global_bets').select('*').eq('player_id', playerId).maybeSingle(),
     ])
-    setMatches(m ?? [])
+    const matchList = m ?? []
+    setMatches(matchList)
+    // Global bets lock when first match starts (or 20min before)
+    if (matchList.length > 0 && matchList[0].match_date) {
+      const firstMatch = new Date(matchList[0].match_date).getTime()
+      setGlobalLocked(Date.now() >= firstMatch - 20 * 60 * 1000)
+    }
     setConfig(cfg?.[0] ?? null)
     const predMap: Record<string, Prediction> = {}
     preds?.forEach(p => { predMap[p.match_id] = p })
@@ -243,6 +250,11 @@ export default function JugadorPage() {
 
       {tab === 'global' && (
         <div className="bg-white rounded-xl border border-gray-100 p-6">
+          {globalLocked && !session.isAdmin && (
+            <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2 mb-4 text-sm text-red-600">
+              🔒 Las apuestas globales están cerradas — el mundial ya comenzó
+            </div>
+          )}
           <p className="text-sm text-gray-500 mb-6">Una sola apuesta por categoría antes del mundial.</p>
           {([
             { field: 'champion', label: '🏆 Campeón del mundo', placeholder: 'Ej: Argentina', pts: config?.champion_pts ?? 20 },
