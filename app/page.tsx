@@ -9,6 +9,7 @@ type Standing = {
   total: number
   correct: number
   exact: number
+  played: number
 }
 
 type MatchWithPreds = Match & { predictions: (Prediction & { player: Player })[] }
@@ -36,15 +37,18 @@ export default function Home() {
     const cfg: Config = cfgArr?.[0] ?? { id: 1, champion_pts: 20, scorer_pts: 15, keeper_pts: 10, mvp_pts: 10, exact_score_pts: 5, winner_only_pts: 2, draw_exact_pts: 5, draw_only_pts: 2, ud_exact_score_pts: 10, ud_winner_only_pts: 5, ud_draw_exact_pts: 8, ud_draw_only_pts: 4 }
 
     const standingMap: Record<string, Standing> = {}
-    players.forEach(p => { standingMap[p.id] = { player: p, matchPts: 0, globalPts: 0, total: 0, correct: 0, exact: 0 } })
+    players.forEach(p => { standingMap[p.id] = { player: p, matchPts: 0, globalPts: 0, total: 0, correct: 0, exact: 0, played: 0 } })
 
     preds.forEach(pr => {
       if (!standingMap[pr.player_id]) return
       standingMap[pr.player_id].matchPts += pr.points_earned ?? 0
       if ((pr.points_earned ?? 0) > 0) standingMap[pr.player_id].correct++
       const m = matchesRaw.find(x => x.id === pr.match_id)
-      if (m && m.result_home !== null && pr.home_goals === m.result_home && pr.away_goals === m.result_away) {
-        standingMap[pr.player_id].exact++
+      if (m && m.result_home !== null) {
+        standingMap[pr.player_id].played++
+        if (pr.home_goals === m.result_home && pr.away_goals === m.result_away) {
+          standingMap[pr.player_id].exact++
+        }
       }
     })
     globalBets.forEach(gb => {
@@ -90,9 +94,10 @@ export default function Home() {
               <tr className="border-b border-gray-100">
                 <th className="text-left text-xs text-gray-400 font-medium px-4 py-3">#</th>
                 <th className="text-left text-xs text-gray-400 font-medium px-4 py-3">Jugador</th>
-                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Partidos</th>
-                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Globales</th>
+                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3 hidden sm:table-cell">Jugados</th>
                 <th className="text-right text-xs text-gray-400 font-medium px-4 py-3 hidden sm:table-cell">Exactos</th>
+                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Pts partidos</th>
+                <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Pts globales</th>
                 <th className="text-right text-xs text-gray-400 font-medium px-4 py-3">Total</th>
               </tr>
             </thead>
@@ -106,9 +111,10 @@ export default function Home() {
                       <span className="font-medium text-sm text-gray-900">{s.player.name}</span>
                     </div>
                   </td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-400 hidden sm:table-cell">{s.played}</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-400 hidden sm:table-cell">{s.exact}</td>
                   <td className="px-4 py-3 text-right text-sm text-gray-600">{s.matchPts}</td>
                   <td className="px-4 py-3 text-right text-sm text-gray-600">{s.globalPts}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-400 hidden sm:table-cell">{s.exact}</td>
                   <td className="px-4 py-3 text-right font-semibold text-purple-700">{s.total}</td>
                 </tr>
               ))}
