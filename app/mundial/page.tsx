@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 type Tab = 'grupos' | 'fixture' | 'knockouts' | 'stats'
 
@@ -281,8 +282,9 @@ function Grupos({ groups }: { groups: Group[] }) {
 function MatchRow({ m }: { m: Match }) {
   const done = m.status === 'FINISHED'
   const live = m.status === 'IN_PLAY' || m.status === 'PAUSED'
-  return (
-    <div className={`flex items-center gap-3 px-4 py-4 text-sm border-t border-slate-700/40 first:border-t-0 ${live ? 'bg-red-500/5' : ''}`}>
+  const href = m.home && m.away ? `/mundial/partido?home=${encodeURIComponent(m.home)}&away=${encodeURIComponent(m.away)}` : null
+  const Row = (
+    <div className={`flex items-center gap-3 px-4 py-4 text-sm border-t border-slate-700/40 first:border-t-0 ${live ? 'bg-red-500/5' : ''} ${href ? 'hover:bg-slate-800/80 cursor-pointer transition-colors' : ''}`}>
       <div className="flex-1 flex items-center justify-end gap-2.5 text-right">
         <span className={done && (m.homeGoals ?? 0) > (m.awayGoals ?? 0) ? 'font-bold text-white' : 'text-slate-300'}>{m.home || 'Por definir'}</span>
         <Crest src={m.homeCrest} alt={m.home} />
@@ -301,6 +303,7 @@ function MatchRow({ m }: { m: Match }) {
       </div>
     </div>
   )
+  return href ? <Link href={href} className="block">{Row}</Link> : Row
 }
 
 // ---------- FIXTURE ----------
