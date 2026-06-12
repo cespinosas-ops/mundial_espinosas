@@ -98,6 +98,7 @@ export default function Navbar() {
     { href: '/', label: 'Tabla' },
     { href: '/jugador', label: 'Mis apuestas' },
     { href: '/apuestas', label: 'Apuestas' },
+    { href: '/mundial', label: 'Mundial' },
     { href: '/reglas', label: 'Reglas' },
     { href: '/admin', label: 'Admin' },
   ]
