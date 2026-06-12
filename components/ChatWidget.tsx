@@ -128,7 +128,9 @@ export default function ChatWidget() {
                 <div key={m.id} className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
                   <span className="text-lg shrink-0">{p.emoji}</span>
                   <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${isMe ? 'bg-purple-600 text-white' : 'bg-white border border-gray-100 text-gray-800'}`}>
-                    {!isMe && <div className="text-[10px] font-medium text-gray-400 mb-0.5">{p.name}</div>}
+                    <div className={`text-[10px] font-medium mb-0.5 ${isMe ? 'text-purple-200' : 'text-gray-400'}`}>
+                      {p.name} · {new Date(m.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                     <div className="text-sm break-words">{m.message}</div>
                   </div>
                 </div>
