@@ -59,6 +59,38 @@ function trimPlayer(p: any) {
   }
 }
 
+function pctNum(v) {
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') {
+    const m = v.match(/(\d+)/)
+    if (m) return parseInt(m[1])
+  }
+  return null
+}
+
+function extractStats(ls) {
+  const h = ls.home || {}, a = ls.away || {}
+  const rows = [
+    { key: 'ball_possession', label: 'Posesión', pct: true },
+    { key: 'total_shots', label: 'Tiros totales' },
+    { key: 'shots_on_target', label: 'Tiros al arco' },
+    { key: 'expected_goals', label: 'xG' },
+    { key: 'big_chances', label: 'Ocasiones claras' },
+    { key: 'corner_kicks', label: 'Córners' },
+    { key: 'passes', label: 'Pases' },
+    { key: 'fouls', label: 'Faltas' },
+    { key: 'yellow_cards', label: 'Amarillas' },
+  ]
+  return rows
+    .filter(r => h[r.key] != null || a[r.key] != null)
+    .map(r => ({
+      label: r.label,
+      home: typeof h[r.key] === 'number' ? h[r.key] : pctNum(h[r.key]),
+      away: typeof a[r.key] === 'number' ? a[r.key] : pctNum(a[r.key]),
+      pct: !!r.pct,
+    }))
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type')
@@ -109,6 +141,8 @@ export async function GET(req: Request) {
           avgXgC: det.away_form.avg_xg_conceded,
         } : null,
         unavailable: det.unavailable_players || null,
+        liveStats: det.live_stats ? extractStats(det.live_stats) : null,
+        minutePlayed: det.current_minute,
         lineups: lineups ? {
           home: { players: (lineups.home?.players || []).map(trimPlayer), formation: lineups.home?.formation || null },
           away: { players: (lineups.away?.players || []).map(trimPlayer), formation: lineups.away?.formation || null },

@@ -18,6 +18,8 @@ type Detail = {
   homeForm: Form | null; awayForm: Form | null
   unavailable: any
   lineups: { home: { players: P[]; formation: string | null }; away: { players: P[]; formation: string | null } } | null
+  liveStats: { label: string; home: number | null; away: number | null; pct: boolean }[] | null
+  minutePlayed: number | null
 }
 
 function ratingColor(r: number | null) {
@@ -131,6 +133,30 @@ function Subs({ team, players }: { team: string; players: P[] }) {
   )
 }
 
+function StatBar({ label, home, away, pct }: { label: string; home: number | null; away: number | null; pct: boolean }) {
+  const h = home ?? 0, a = away ?? 0
+  const total = h + a
+  const hPct = total > 0 ? (h / total) * 100 : 50
+  const homeWins = h >= a
+  return (
+    <div className="py-2">
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className={`font-bold ${homeWins ? 'text-white' : 'text-slate-400'}`}>{pct ? `${h}%` : h}</span>
+        <span className="text-slate-500">{label}</span>
+        <span className={`font-bold ${!homeWins ? 'text-white' : 'text-slate-400'}`}>{pct ? `${a}%` : a}</span>
+      </div>
+      <div className="flex gap-1 h-1.5">
+        <div className="bg-slate-700 rounded-l overflow-hidden" style={{ width: `${hPct}%` }}>
+          <div className="h-full bg-purple-500"></div>
+        </div>
+        <div className="bg-slate-700 rounded-r overflow-hidden flex-1">
+          <div className="h-full bg-emerald-500 ml-auto" style={{ width: '100%' }}></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Content() {
   const params = useSearchParams()
   const home = params.get('home') || ''
@@ -182,6 +208,21 @@ function Content() {
           {[d.venue, d.referee && `Árbitro: ${d.referee}`, d.attendance && `${d.attendance.toLocaleString('es-CL')} espectadores`].filter(Boolean).join(' · ')}
         </div>
       </div>
+
+      {d.liveStats && d.liveStats.length > 0 && (
+        <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-white">Estadísticas {d.minutePlayed != null ? `· ${d.minutePlayed}'` : ''}</h2>
+            <div className="flex items-center gap-3 text-[10px]">
+              <span className="flex items-center gap-1 text-slate-400"><span className="w-2 h-2 rounded-full bg-purple-500"></span>{d.home}</span>
+              <span className="flex items-center gap-1 text-slate-400"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>{d.away}</span>
+            </div>
+          </div>
+          <div className="divide-y divide-slate-700/30">
+            {d.liveStats.map((s, i) => <StatBar key={i} {...s} />)}
+          </div>
+        </div>
+      )}
 
       {(d.homeForm || d.awayForm) && (
         <div className="grid sm:grid-cols-2 gap-3 mb-6">
