@@ -11,19 +11,19 @@ export default function ReglasPage() {
     })
   }, [])
 
-  if (!config) return <div className="text-gray-400 text-sm">Cargando...</div>
+  if (!config) return <div className="text-slate-500 text-sm">Cargando...</div>
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 mb-4">
-      <h2 className="text-base font-medium text-gray-900 mb-4">{title}</h2>
+    <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5 mb-4">
+      <h2 className="text-base font-semibold text-white mb-4">{title}</h2>
       {children}
     </div>
   )
 
   const Row = ({ label, pts, highlight }: { label: string; pts: number; highlight?: boolean }) => (
-    <div className={`flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 ${highlight ? 'text-amber-700' : ''}`}>
-      <span className="text-sm text-gray-700">{label}</span>
-      <span className={`text-sm font-semibold px-2.5 py-0.5 rounded-full ${highlight ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
+    <div className={`flex items-center justify-between py-2.5 border-b border-slate-700/40 last:border-0`}>
+      <span className="text-sm text-slate-300">{label}</span>
+      <span className={`text-sm font-semibold px-2.5 py-0.5 rounded-full ${highlight ? 'bg-amber-500/20 text-amber-300' : 'bg-purple-500/20 text-purple-300'}`}>
         {pts} pts
       </span>
     </div>
@@ -32,12 +32,12 @@ export default function ReglasPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-medium text-gray-900 mb-1">Reglas de puntaje</h1>
-        <p className="text-sm text-gray-500">El admin puede modificar los valores en la pestaña Admin → Puntos</p>
+        <h1 className="text-2xl font-bold text-white mb-1">Reglas de puntaje</h1>
+        <p className="text-sm text-slate-400">El admin puede modificar los valores en la pestaña Admin → Puntos</p>
       </div>
 
-      <div className="bg-gray-50 rounded-xl p-5 text-sm text-gray-600 space-y-2">
-        <p className="font-medium text-gray-900 mb-3">📋 Reglas generales</p>
+      <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 text-sm text-slate-300 space-y-2">
+        <p className="font-semibold text-white mb-3">📋 Reglas generales</p>
         <p>• Si le achuntái al marcador exacto, te llevái los puntos máximos — eso incluye automáticamente achuntarle al ganador.</p>
         <p>• Si no le achuntái al marcador pero sí al ganador (o al empate), te llevái puntos parciales.</p>
         <p>• Si no le achuntái al ganador, obviamente no le achuntái al marcador tampoco y no ganái puntos.</p>
@@ -47,16 +47,17 @@ export default function ReglasPage() {
         <p>• Las apuestas globales (campeón, goleador, arquero) se hacen antes del mundial y no se pueden cambiar una vez que empiece.</p>
       </div>
 
+      <div className="mt-4"></div>
+
       <Section title="🏆 Apuestas globales — antes del mundial">
-        <p className="text-xs text-gray-400 mb-3">Una sola apuesta por categoría antes de que empiece el torneo. Se resuelven al final.</p>
+        <p className="text-xs text-slate-500 mb-3">Una sola apuesta por categoría antes de que empiece el torneo. Se resuelven al final.</p>
         <Row label="Campeón del mundo acertado" pts={config.champion_pts} />
         <Row label="Goleador del torneo acertado" pts={config.scorer_pts} />
         <Row label="Mejor arquero acertado" pts={config.keeper_pts} />
-        <Row label="Balón de Oro acertado" pts={config.mvp_pts} />
       </Section>
 
       <Section title="⚽ Apuestas por partido — favorito">
-        <p className="text-xs text-gray-400 mb-3">El favorito es el equipo con mejor posición en el ranking FIFA.</p>
+        <p className="text-xs text-slate-500 mb-3">El favorito es el equipo con mejor posición en el ranking FIFA.</p>
         <Row label="Marcador exacto correcto" pts={config.exact_score_pts} />
         <Row label="Ganador correcto (sin marcador)" pts={config.winner_only_pts} />
         <Row label="Empate con marcador exacto" pts={config.draw_exact_pts} />
@@ -64,14 +65,12 @@ export default function ReglasPage() {
       </Section>
 
       <Section title="⚡ Apuestas por partido — no favorito">
-        <p className="text-xs text-gray-400 mb-3">El no favorito es el equipo con peor posición en el ranking FIFA. Apostando a él y acertando se ganan más puntos.</p>
+        <p className="text-xs text-slate-500 mb-3">El no favorito es el equipo con peor posición en el ranking FIFA. Apostando a él y acertando se ganan más puntos.</p>
         <Row label="Marcador exacto del no favorito" pts={config.ud_exact_score_pts} highlight />
         <Row label="Victoria del no favorito (sin marcador)" pts={config.ud_winner_only_pts} highlight />
         <Row label="Empate exacto apostando al no favorito" pts={config.ud_draw_exact_pts} highlight />
         <Row label="Empate correcto apostando al no favorito" pts={config.ud_draw_only_pts} highlight />
       </Section>
-
-
     </div>
   )
 }

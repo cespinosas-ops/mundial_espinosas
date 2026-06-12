@@ -111,7 +111,7 @@ export default function JugadorPage() {
     return m.home_ranking < m.away_ranking ? m.away : m.home
   }
 
-  if (!session || !loaded) return <div className="text-gray-400 text-sm p-8">Cargando...</div>
+  if (!session || !loaded) return <div className="text-slate-500 text-sm p-8">Cargando...</div>
 
   const pendingMatches = matches.filter(m => m.result_home === null)
   const playedMatches = matches.filter(m => m.result_home !== null)
@@ -121,37 +121,37 @@ export default function JugadorPage() {
       <div className="flex items-center gap-3 mb-6">
         <span className="text-3xl">{session.playerEmoji}</span>
         <div>
-          <h1 className="text-2xl font-medium text-gray-900">Mis apuestas</h1>
-          <p className="text-sm text-gray-500">{session.playerName}</p>
+          <h1 className="text-2xl font-bold text-white">Mis apuestas</h1>
+          <p className="text-sm text-slate-400">{session.playerName}</p>
         </div>
       </div>
 
       {session.isAdmin && (
-        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4 text-sm text-amber-700 space-y-2">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-4 text-sm text-amber-300 space-y-2">
           <div>👑 Modo admin — sin restricciones de tiempo</div>
           <select value={adminTarget} onChange={e => { setAdminTarget(e.target.value); if(!e.target.value) { setPredictions({}); setGlobalBet({}) } }}
-            className="w-full border border-amber-200 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-900">
+            className="w-full border border-amber-500/30 rounded-lg px-3 py-1.5 text-sm bg-slate-800 text-white">
             <option value="">— Ver mis propias apuestas de admin —</option>
             {players.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
           </select>
-          {adminTarget && <div className="text-xs text-amber-600">Editando apuestas de: <strong>{players.find(p=>p.id===adminTarget)?.name}</strong></div>}
+          {adminTarget && <div className="text-xs text-amber-400">Editando apuestas de: <strong>{players.find(p=>p.id===adminTarget)?.name}</strong></div>}
         </div>
       )}
 
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      <div className="flex gap-1 border-b border-slate-700 mb-6">
         <button onClick={() => setTab('partidos')}
-          className={"px-4 py-2 text-sm border-b-2 -mb-px " + (tab === 'partidos' ? 'border-purple-500 text-purple-700 font-medium' : 'border-transparent text-gray-500')}>
+          className={"px-4 py-2 text-sm border-b-2 -mb-px " + (tab === 'partidos' ? 'border-purple-500 text-purple-400 font-semibold' : 'border-transparent text-slate-500')}>
           Partidos ({pendingMatches.length} pendientes)
         </button>
         <button onClick={() => setTab('global')}
-          className={"px-4 py-2 text-sm border-b-2 -mb-px " + (tab === 'global' ? 'border-purple-500 text-purple-700 font-medium' : 'border-transparent text-gray-500')}>
+          className={"px-4 py-2 text-sm border-b-2 -mb-px " + (tab === 'global' ? 'border-purple-500 text-purple-400 font-semibold' : 'border-transparent text-slate-500')}>
           Apuestas globales
         </button>
       </div>
 
       {tab === 'partidos' && (
         <div>
-          {pendingMatches.length === 0 && <div className="text-center py-8 text-gray-400 text-sm">No hay partidos pendientes</div>}
+          {pendingMatches.length === 0 && <div className="text-center py-8 text-slate-500 text-sm">No hay partidos pendientes</div>}
           <div className="space-y-4">
             {pendingMatches.map(m => {
               const pred = predictions[m.id] ?? {}
@@ -160,32 +160,32 @@ export default function JugadorPage() {
               const homeIsFav = m.home_ranking && m.away_ranking && m.home_ranking < m.away_ranking
               const awayIsFav = m.home_ranking && m.away_ranking && m.away_ranking < m.home_ranking
               return (
-                <div key={m.id} className={"bg-white rounded-xl border p-4 " + (locked ? 'border-red-100' : 'border-gray-100')}>
+                <div key={m.id} className={"bg-slate-800/50 rounded-xl border p-4 " + (locked ? 'border-red-500/30' : 'border-slate-700/50')}>
                   <div className="flex items-center gap-2 mb-4 flex-wrap">
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{m.phase}</span>
-                    {m.match_date && <span className="text-xs text-gray-400">{new Date(m.match_date).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
-                    {locked && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">🔒 Cerrado</span>}
+                    <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-medium">{m.phase}</span>
+                    {m.match_date && <span className="text-xs text-slate-500">{new Date(m.match_date).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
+                    {locked && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">🔒 Cerrado</span>}
                   </div>
                   <div className="grid grid-cols-3 gap-2 items-center mb-4">
                     <div className="text-center">
-                      <div className="font-semibold text-sm text-gray-900 mb-1">{m.home}</div>
-                      {m.home_ranking && <div className={"text-xs px-2 py-0.5 rounded-full inline-block " + (homeIsFav ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700')}>#{m.home_ranking} {homeIsFav ? 'Fav' : 'No fav'}</div>}
+                      <div className="font-semibold text-sm text-white mb-1">{m.home}</div>
+                      {m.home_ranking && <div className={"text-xs px-2 py-0.5 rounded-full inline-block " + (homeIsFav ? 'bg-blue-500/20 text-blue-300' : 'bg-amber-500/20 text-amber-300')}>#{m.home_ranking} {homeIsFav ? 'Fav' : 'No fav'}</div>}
                     </div>
-                    <div className="text-center text-gray-300 font-medium text-sm">vs</div>
+                    <div className="text-center text-slate-600 font-medium text-sm">vs</div>
                     <div className="text-center">
-                      <div className="font-semibold text-sm text-gray-900 mb-1">{m.away}</div>
-                      {m.away_ranking && <div className={"text-xs px-2 py-0.5 rounded-full inline-block " + (awayIsFav ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700')}>#{m.away_ranking} {awayIsFav ? 'Fav' : 'No fav'}</div>}
+                      <div className="font-semibold text-sm text-white mb-1">{m.away}</div>
+                      {m.away_ranking && <div className={"text-xs px-2 py-0.5 rounded-full inline-block " + (awayIsFav ? 'bg-blue-500/20 text-blue-300' : 'bg-amber-500/20 text-amber-300')}>#{m.away_ranking} {awayIsFav ? 'Fav' : 'No fav'}</div>}
                     </div>
                   </div>
-                  {udTeam && !locked && <div className="text-xs bg-amber-50 border border-amber-100 text-amber-700 rounded-lg px-3 py-2 mb-4">⚡ Si apostás a <strong>{udTeam}</strong> y acertás, ganás puntos extra</div>}
+                  {udTeam && !locked && <div className="text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg px-3 py-2 mb-4">⚡ Si apostás a <strong>{udTeam}</strong> y acertás, ganás puntos extra</div>}
                   {locked ? (
-                    <div className="bg-gray-50 rounded-lg p-3 text-center text-sm text-gray-500">
+                    <div className="bg-slate-900/50 rounded-lg p-3 text-center text-sm text-slate-400">
                       {pred.picked_team ? <>Tu apuesta: <strong>{pred.picked_team === 'home' ? m.home : pred.picked_team === 'away' ? m.away : 'Empate'}</strong>{pred.home_goals !== null ? " (" + pred.home_goals + "-" + pred.away_goals + ")" : ''}</> : 'No apostaste en este partido'}
                     </div>
                   ) : (
                     <>
                       <div className="mb-4">
-                        <div className="text-xs text-gray-500 mb-2 font-medium">¿Quién gana?</div>
+                        <div className="text-xs text-slate-400 mb-2 font-medium">¿Quién gana?</div>
                         <div className="flex gap-2">
                           {(['home', 'draw', 'away'] as const).map(opt => {
                             const label = opt === 'home' ? m.home : opt === 'away' ? m.away : 'Empate'
@@ -193,7 +193,7 @@ export default function JugadorPage() {
                             return (
                               <button key={opt}
                                 onClick={() => { savePrediction(m.id, 'picked_team', pred.picked_team === opt ? null : opt); if (pred.picked_team !== opt && pred.home_goals === null) { setTimeout(() => { savePrediction(m.id, 'home_goals', 0); savePrediction(m.id, 'away_goals', 0) }, 100) } }}
-                                className={"flex-1 text-xs py-2.5 px-1 rounded-lg border transition-all " + (pred.picked_team === opt ? 'bg-purple-600 text-white border-purple-600 font-medium' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300')}>
+                                className={"flex-1 text-xs py-2.5 px-1 rounded-lg border transition-all " + (pred.picked_team === opt ? 'bg-purple-600 text-white border-purple-600 font-medium' : 'bg-slate-800 text-slate-200 border-slate-700 hover:border-purple-400')}>
                                 {label}{opt !== 'draw' && isUd ? ' ⚡' : ''}
                               </button>
                             )
@@ -201,21 +201,21 @@ export default function JugadorPage() {
                         </div>
                       </div>
                       <div className="mb-3">
-                        <div className="text-xs text-gray-500 mb-2 font-medium">Marcador exacto</div>
+                        <div className="text-xs text-slate-400 mb-2 font-medium">Marcador exacto</div>
                         <div className="flex items-center gap-3">
                           <div className="text-center">
-                            <div className="text-xs text-gray-400 mb-1">{m.home}</div>
-                            <input key={m.id + '_home_' + (predictions[m.id] ? '1' : '0')} type="number" min="0" max="20" placeholder="0" defaultValue={pred.home_goals ?? ''} onBlur={e => savePrediction(m.id, 'home_goals', e.target.value !== '' ? parseInt(e.target.value) : null)} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
+                            <div className="text-xs text-slate-500 mb-1">{m.home}</div>
+                            <input key={m.id + '_home_' + (predictions[m.id] ? '1' : '0')} type="number" min="0" max="20" placeholder="0" defaultValue={pred.home_goals ?? ''} onBlur={e => savePrediction(m.id, 'home_goals', e.target.value !== '' ? parseInt(e.target.value) : null)} className="w-14 border border-slate-700 bg-slate-800 text-white rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
                           </div>
-                          <span className="text-gray-300 text-lg mt-4">-</span>
+                          <span className="text-slate-600 text-lg mt-4">-</span>
                           <div className="text-center">
-                            <div className="text-xs text-gray-400 mb-1">{m.away}</div>
-                            <input key={m.id + '_away_' + (predictions[m.id] ? '1' : '0')} type="number" min="0" max="20" placeholder="0" defaultValue={pred.away_goals ?? ''} onBlur={e => savePrediction(m.id, 'away_goals', e.target.value !== '' ? parseInt(e.target.value) : null)} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
+                            <div className="text-xs text-slate-500 mb-1">{m.away}</div>
+                            <input key={m.id + '_away_' + (predictions[m.id] ? '1' : '0')} type="number" min="0" max="20" placeholder="0" defaultValue={pred.away_goals ?? ''} onBlur={e => savePrediction(m.id, 'away_goals', e.target.value !== '' ? parseInt(e.target.value) : null)} className="w-14 border border-slate-700 bg-slate-800 text-white rounded-lg px-2 py-1.5 text-sm text-center font-medium" />
                           </div>
                         </div>
                       </div>
                       <div className="flex justify-end">
-                        <button onClick={() => clearPrediction(m.id)} className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-3 py-1 rounded-lg transition-all">Eliminar apuesta</button>
+                        <button onClick={() => clearPrediction(m.id)} className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/60 px-3 py-1 rounded-lg transition-all">Eliminar apuesta</button>
                       </div>
                     </>
                   )}
@@ -225,19 +225,19 @@ export default function JugadorPage() {
           </div>
           {playedMatches.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Partidos jugados</h2>
+              <h2 className="text-lg font-bold text-white mb-4">Partidos jugados</h2>
               <div className="space-y-3">
                 {playedMatches.map(m => {
                   const pred = predictions[m.id]
                   const pts = pred?.points_earned ?? 0
                   return (
-                    <div key={m.id} className={"bg-white rounded-xl border p-4 " + (pts > 0 ? 'border-green-100' : 'border-gray-100')}>
+                    <div key={m.id} className={"bg-slate-800/50 rounded-xl border p-4 " + (pts > 0 ? 'border-emerald-500/30' : 'border-slate-700/50')}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{m.home} vs {m.away}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">Resultado: <strong>{m.result_home} - {m.result_away}</strong> · {pred ? (pred.picked_team === 'home' ? m.home : pred.picked_team === 'away' ? m.away : 'Empate') + (pred.home_goals !== null ? " (" + pred.home_goals + "-" + pred.away_goals + ")" : '') : 'Sin predicción'}</div>
+                          <div className="text-sm font-medium text-white">{m.home} vs {m.away}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">Resultado: <strong>{m.result_home} - {m.result_away}</strong> · {pred ? (pred.picked_team === 'home' ? m.home : pred.picked_team === 'away' ? m.away : 'Empate') + (pred.home_goals !== null ? " (" + pred.home_goals + "-" + pred.away_goals + ")" : '') : 'Sin predicción'}</div>
                         </div>
-                        <div className={"font-bold text-xl " + (pts > 0 ? 'text-green-600' : 'text-gray-200')}>+{pts}</div>
+                        <div className={"font-bold text-xl " + (pts > 0 ? 'text-emerald-400' : 'text-slate-700')}>+{pts}</div>
                       </div>
                     </div>
                   )
@@ -249,13 +249,13 @@ export default function JugadorPage() {
       )}
 
       {tab === 'global' && (
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6">
           {globalLocked && !session.isAdmin && (
-            <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2 mb-4 text-sm text-red-600">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2 mb-4 text-sm text-red-400">
               🔒 Las apuestas globales están cerradas — el mundial ya comenzó
             </div>
           )}
-          <p className="text-sm text-gray-500 mb-6">Una sola apuesta por categoría antes del mundial.</p>
+          <p className="text-sm text-slate-400 mb-6">Una sola apuesta por categoría antes del mundial.</p>
           {([
             { field: 'champion', label: '🏆 Campeón del mundo', placeholder: 'Ej: Argentina', pts: config?.champion_pts ?? 20 },
             { field: 'scorer', label: '⚽ Goleador del torneo', placeholder: 'Ej: Mbappé', pts: config?.scorer_pts ?? 15 },
@@ -263,13 +263,13 @@ export default function JugadorPage() {
           ] as const).map(({ field, label, placeholder, pts }) => (
             <div key={field} className="mb-5">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-gray-700">{label}</label>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{pts} pts</span>
+                <label className="text-sm font-medium text-slate-200">{label}</label>
+                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{pts} pts</span>
               </div>
-              <input type="text" placeholder={placeholder} defaultValue={(globalBet as any)[field] ?? ''} onBlur={e => saveGlobalBet(field, e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              <input type="text" placeholder={placeholder} defaultValue={(globalBet as any)[field] ?? ''} onBlur={e => saveGlobalBet(field, e.target.value)} className="w-full border border-slate-700 bg-slate-800 text-white rounded-lg px-3 py-2 text-sm" />
             </div>
           ))}
-          <p className="text-xs text-gray-400">Se guarda automáticamente al salir de cada campo</p>
+          <p className="text-xs text-slate-500">Se guarda automáticamente al salir de cada campo</p>
         </div>
       )}
     </div>

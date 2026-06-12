@@ -29,25 +29,21 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    // Cargar sesión desde localStorage
     const stored = localStorage.getItem('mundial_session')
     if (stored) {
       try { setSession(JSON.parse(stored)) } catch {}
     }
 
-    // Cargar partidos próximos
     supabase.from('matches').select('id,home,away,match_date,result_home')
       .is('result_home', null)
       .order('match_date', { ascending: true })
       .limit(5)
       .then(({ data }) => { if (data) setUpcomingMatches(data) })
 
-    // Actualizar reloj cada segundo
     const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
   }, [])
 
-  // Escuchar cambios de sesión desde otras páginas
   useEffect(() => {
     const handler = () => {
       const stored = localStorage.getItem('mundial_session')
@@ -68,12 +64,10 @@ export default function Navbar() {
     setMenuOpen(false)
   }
 
-  // Partidos próximos (sin resultado, en las próximas 24h)
   const nextMatches = upcomingMatches.filter(m => {
     const matchTime = new Date(m.match_date).getTime()
     const diff = matchTime - now.getTime()
     const timeSinceStart = now.getTime() - matchTime
-    // Show if: within 24h before start, OR within 2h after start
     return diff < 24 * 60 * 60 * 1000 && timeSinceStart < 2 * 60 * 60 * 1000
   }).slice(0, 3)
 
@@ -107,16 +101,16 @@ export default function Navbar() {
     <div className="sticky top-0 z-50">
       {/* Barra de countdown */}
       {nextMatches.length > 0 && (
-        <div className="bg-gray-900 text-white text-xs px-4 py-1.5 flex items-center gap-4 overflow-x-auto">
-          <span className="text-gray-400 shrink-0">⏱ Cierre apuestas:</span>
+        <div className="bg-black text-white text-xs px-4 py-1.5 flex items-center gap-4 overflow-x-auto">
+          <span className="text-slate-400 shrink-0">⏱ Cierre apuestas:</span>
           {nextMatches.map(m => {
             const locked = isLocked(m.match_date)
             return (
               <div key={m.id} className="flex items-center gap-2 shrink-0">
-                <span className={locked ? 'text-red-400 font-medium' : 'text-white'}>
+                <span className={locked ? 'text-red-400 font-medium' : 'text-slate-200'}>
                   {m.home} vs {m.away}
                 </span>
-                <span className={`font-mono font-bold ${locked ? 'text-red-400' : 'text-green-400'}`}>
+                <span className={`font-mono font-bold ${locked ? 'text-red-400' : 'text-emerald-400'}`}>
                   {locked ? '🔒 Cerrado' : formatCountdown(m.match_date)}
                 </span>
               </div>
@@ -126,14 +120,14 @@ export default function Navbar() {
       )}
 
       {/* Nav principal */}
-      <nav className="border-b border-gray-200 bg-white">
+      <nav className="border-b border-slate-800 bg-slate-900">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="font-semibold text-gray-900">🏆 Mundial 2026</Link>
+          <Link href="/" className="font-bold text-white">🏆 Mundial 2026</Link>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex gap-4 text-sm">
               {links.map(l => (
                 <Link key={l.href} href={l.href}
-                  className={`hover:text-gray-900 ${pathname === l.href ? 'text-purple-700 font-medium' : 'text-gray-600'}`}>
+                  className={`hover:text-white transition-colors ${pathname === l.href ? 'text-purple-400 font-semibold' : 'text-slate-400'}`}>
                   {l.label}
                 </Link>
               ))}
@@ -141,31 +135,31 @@ export default function Navbar() {
             {/* Sesión */}
             <div className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-1.5 text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-all">
+                className="flex items-center gap-1.5 text-sm bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-all">
                 {session ? (
                   <>
                     <span>{session.playerEmoji}</span>
-                    <span className="font-medium text-gray-900 max-w-20 truncate">{session.isAdmin ? '👑 Admin' : session.playerName}</span>
+                    <span className="font-medium text-white max-w-20 truncate">{session.isAdmin ? '👑 Admin' : session.playerName}</span>
                   </>
                 ) : (
-                  <span className="text-gray-500">Iniciar sesión</span>
+                  <span className="text-slate-400">Iniciar sesión</span>
                 )}
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-48 z-50">
+                <div className="absolute right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg py-1 w-48 z-50">
                   {session ? (
                     <>
-                      <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-100">
+                      <div className="px-4 py-2 text-xs text-slate-400 border-b border-slate-700">
                         Sesión de {session.isAdmin ? 'Admin' : session.playerName}
                       </div>
                       <button onClick={logout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50">
+                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10">
                         Cerrar sesión
                       </button>
                     </>
                   ) : (
                     <Link href="/login" onClick={() => setMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">
                       Iniciar sesión
                     </Link>
                   )}
@@ -178,7 +172,7 @@ export default function Navbar() {
         <div className="sm:hidden flex gap-3 px-4 pb-2 text-sm overflow-x-auto">
           {links.map(l => (
             <Link key={l.href} href={l.href}
-              className={`shrink-0 hover:text-gray-900 ${pathname === l.href ? 'text-purple-700 font-medium' : 'text-gray-600'}`}>
+              className={`shrink-0 hover:text-white transition-colors ${pathname === l.href ? 'text-purple-400 font-semibold' : 'text-slate-400'}`}>
               {l.label}
             </Link>
           ))}
