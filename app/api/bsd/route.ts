@@ -147,8 +147,8 @@ export async function GET(req: Request) {
         liveStats: det.live_stats ? extractStats(det.live_stats) : null,
         minutePlayed: det.current_minute,
         lineups: lineups ? {
-          home: { players: (lineups.home?.players || []).map(trimPlayer), formation: lineups.home?.formation || null },
-          away: { players: (lineups.away?.players || []).map(trimPlayer), formation: lineups.away?.formation || null },
+          home: { players: (lineups.home?.players || []).map(trimPlayer), substitutes: (lineups.home?.substitutes || []).map(trimPlayer), formation: lineups.home?.formation || null },
+          away: { players: (lineups.away?.players || []).map(trimPlayer), substitutes: (lineups.away?.substitutes || []).map(trimPlayer), formation: lineups.away?.formation || null },
         } : null,
       })
     }

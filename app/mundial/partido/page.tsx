@@ -18,7 +18,7 @@ type Detail = {
   homeCoach: string | null; awayCoach: string | null
   homeForm: Form | null; awayForm: Form | null
   unavailable: any
-  lineups: { home: { players: P[]; formation: string | null }; away: { players: P[]; formation: string | null } } | null
+  lineups: { home: { players: P[]; substitutes: P[]; formation: string | null }; away: { players: P[]; substitutes: P[]; formation: string | null } } | null
   liveStats: { label: string; home: number | null; away: number | null; pct: boolean }[] | null
   minutePlayed: number | null
 }
@@ -291,9 +291,9 @@ function Content() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-white">Alineaciones</h2>
           <Pitch d={{ ...d.lineups, homeName: d.home, awayName: d.away }} />
-          <div className="space-y-3">
-            <Subs team={d.home} players={d.lineups.home.players} />
-            <Subs team={d.away} players={d.lineups.away.players} />
+          <div className="grid sm:grid-cols-2 gap-3">
+            <TeamBench team={d.home} starters={d.lineups.home.players} subs={d.lineups.home.substitutes} align="left" />
+            <TeamBench team={d.away} starters={d.lineups.away.players} subs={d.lineups.away.substitutes} align="right" />
           </div>
           {(d.homeCoach || d.awayCoach) && (
             <div className="text-xs text-slate-500">
