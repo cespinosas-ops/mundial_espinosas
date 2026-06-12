@@ -20,11 +20,8 @@ type Detail = {
   lineups: { home: { players: P[]; formation: string | null }; away: { players: P[]; formation: string | null } } | null
 }
 
-const POS_ORDER = ['G', 'D', 'M', 'F']
-const POS_LABEL: Record<string, string> = { G: 'Arquero', D: 'Defensas', M: 'Mediocampo', F: 'Delanteros' }
-
 function ratingColor(r: number | null) {
-  if (r == null) return 'bg-slate-700 text-slate-300'
+  if (r == null) return 'bg-slate-700 text-slate-200'
   if (r >= 7.5) return 'bg-emerald-500 text-white'
   if (r >= 6.5) return 'bg-lime-600 text-white'
   if (r >= 5.5) return 'bg-amber-500 text-white'
@@ -43,49 +40,91 @@ function FormBadges({ form }: { form: string }) {
   )
 }
 
-function TeamLineup({ title, players, formation, starters }: { title: string; players: P[]; formation: string | null; starters: boolean }) {
-  const xi = players.filter(p => starters ? p.subIn == null : p.subIn != null)
-  if (!xi.length) return null
-  if (!starters) {
-    return (
-      <div className="mt-3">
-        <div className="text-xs text-slate-500 font-medium mb-1.5">Ingresaron</div>
-        <div className="flex flex-wrap gap-1.5">
-          {xi.map((p, i) => (
-            <span key={i} className="text-xs bg-slate-800 border border-slate-700 rounded-full px-2.5 py-1 text-slate-300">
-              {p.subIn}&apos; #{p.number} {p.name}{p.goals > 0 ? ' ⚽' : ''}{p.yellow ? ' 🟨' : ''}{p.red ? ' 🟥' : ''}
-            </span>
-          ))}
+function PlayerDot({ p }: { p: P }) {
+  return (
+    <div className="flex flex-col items-center w-14 sm:w-16">
+      <div className="relative">
+        <div className="w-9 h-9 rounded-full bg-slate-900/90 border border-slate-500/60 flex items-center justify-center text-[11px] font-bold text-white shadow">
+          {p.number}
         </div>
+        {p.rating != null && (
+          <span className={`absolute -top-1.5 -right-2.5 rounded px-1 text-[9px] font-bold ${ratingColor(p.rating)}`}>{p.rating}</span>
+        )}
+        {(p.goals > 0 || p.yellow || p.red) && (
+          <span className="absolute -bottom-1 -right-1.5 text-[10px]">
+            {p.goals > 0 ? '⚽' : ''}{p.yellow ? '🟨' : ''}{p.red ? '🟥' : ''}
+          </span>
+        )}
       </div>
-    )
+      <div className="text-[10px] text-white mt-1 text-center leading-tight w-full truncate" title={p.name}>{p.name}</div>
+      {p.subOut != null && <div className="text-[9px] text-red-300">↓ {p.subOut}&apos;</div>}
+    </div>
+  )
+}
+
+// Construye filas según la formación (ej "4-1-4-1") respetando el orden de la API
+function buildRows(players: P[], formation: string | null): P[][] {
+  const starters = players.filter(p => p.subIn == null)
+  const gk = starters.find(p => p.position === 'G')
+  const field = starters.filter(p => p !== gk)
+  const nums = (formation || '').split('-').map(n => parseInt(n)).filter(n => !isNaN(n) && n > 0)
+  const rows: P[][] = []
+  if (gk) rows.push([gk])
+  const total = nums.reduce((a, b) => a + b, 0)
+  if (nums.length && total === field.length) {
+    let idx = 0
+    for (const n of nums) { rows.push(field.slice(idx, idx + n)); idx += n }
+  } else {
+    const order = ['D', 'M', 'F']
+    for (const pos of order) {
+      const grp = field.filter(p => p.position === pos)
+      if (grp.length) rows.push(grp)
+    }
   }
-  const byPos: Record<string, P[]> = {}
-  xi.forEach(p => { (byPos[p.position] ||= []).push(p) })
+  return rows
+}
+
+function Pitch({ d }: { d: NonNullable<Detail['lineups']> & { homeName: string; awayName: string } }) {
+  const homeRows = buildRows(d.home.players, d.home.formation)
+  const awayRows = buildRows(d.away.players, d.away.formation).reverse()
+
+  return (
+    <div className="rounded-2xl overflow-hidden border border-emerald-800/40">
+      <div className="flex items-center justify-between bg-slate-900 px-4 py-2.5">
+        <span className="font-bold text-white text-sm">{d.homeName}</span>
+        {d.home.formation && <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{d.home.formation}</span>}
+      </div>
+      <div className="bg-gradient-to-b from-emerald-900/60 via-emerald-950/50 to-emerald-900/60 px-2 py-5 space-y-5">
+        {homeRows.map((row, i) => (
+          <div key={'h' + i} className="flex justify-evenly">{row.map((p, j) => <PlayerDot key={j} p={p} />)}</div>
+        ))}
+        <div className="border-t border-dashed border-white/15 relative my-1">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border border-white/10"></div>
+        </div>
+        {awayRows.map((row, i) => (
+          <div key={'a' + i} className="flex justify-evenly">{row.map((p, j) => <PlayerDot key={j} p={p} />)}</div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between bg-slate-900 px-4 py-2.5">
+        <span className="font-bold text-white text-sm">{d.awayName}</span>
+        {d.away.formation && <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{d.away.formation}</span>}
+      </div>
+    </div>
+  )
+}
+
+function Subs({ team, players }: { team: string; players: P[] }) {
+  const subs = players.filter(p => p.subIn != null)
+  if (!subs.length) return null
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-bold text-white text-sm">{title}</span>
-        {formation && <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{formation}</span>}
-      </div>
-      <div className="rounded-xl bg-gradient-to-b from-emerald-900/40 to-emerald-950/40 border border-emerald-800/30 p-3 space-y-3">
-        {POS_ORDER.map(pos => byPos[pos] && (
-          <div key={pos}>
-            <div className="text-[10px] text-emerald-500/70 uppercase tracking-wider mb-1.5">{POS_LABEL[pos]}</div>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {byPos[pos].map((p, i) => (
-                <div key={i} className="flex items-center gap-1.5 bg-slate-900/70 rounded-lg px-2 py-1.5 text-xs">
-                  <span className="text-slate-500 font-mono">{p.number}</span>
-                  <span className="text-slate-100">{p.name}</span>
-                  {p.goals > 0 && <span>{'⚽'.repeat(p.goals)}</span>}
-                  {p.yellow && <span>🟨</span>}
-                  {p.red && <span>🟥</span>}
-                  {p.subOut != null && <span className="text-red-400 text-[10px]">↓{p.subOut}&apos;</span>}
-                  {p.rating != null && <span className={`rounded px-1 py-0.5 text-[10px] font-bold ${ratingColor(p.rating)}`}>{p.rating}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="text-xs text-slate-500 font-medium mb-1.5">{team} — ingresaron</div>
+      <div className="flex flex-wrap gap-1.5">
+        {subs.map((p, i) => (
+          <span key={i} className="text-xs bg-slate-800 border border-slate-700 rounded-full px-2.5 py-1 text-slate-300">
+            {p.subIn}&apos; #{p.number} {p.name}{p.goals > 0 ? ' ⚽' : ''}{p.yellow ? ' 🟨' : ''}{p.red ? ' 🟥' : ''}
+            {p.rating != null && <span className={`ml-1 rounded px-1 text-[9px] font-bold ${ratingColor(p.rating)}`}>{p.rating}</span>}
+          </span>
         ))}
       </div>
     </div>
@@ -175,20 +214,18 @@ function Content() {
       )}
 
       {d.lineups ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <h2 className="text-lg font-bold text-white">Alineaciones</h2>
-          <div className="grid lg:grid-cols-2 gap-4">
-            <div>
-              <TeamLineup title={d.home} players={d.lineups.home.players} formation={d.lineups.home.formation} starters />
-              <TeamLineup title={d.home} players={d.lineups.home.players} formation={null} starters={false} />
-              {d.homeCoach && <div className="text-xs text-slate-500 mt-2">DT: {d.homeCoach}</div>}
-            </div>
-            <div>
-              <TeamLineup title={d.away} players={d.lineups.away.players} formation={d.lineups.away.formation} starters />
-              <TeamLineup title={d.away} players={d.lineups.away.players} formation={null} starters={false} />
-              {d.awayCoach && <div className="text-xs text-slate-500 mt-2">DT: {d.awayCoach}</div>}
-            </div>
+          <Pitch d={{ ...d.lineups, homeName: d.home, awayName: d.away }} />
+          <div className="space-y-3">
+            <Subs team={d.home} players={d.lineups.home.players} />
+            <Subs team={d.away} players={d.lineups.away.players} />
           </div>
+          {(d.homeCoach || d.awayCoach) && (
+            <div className="text-xs text-slate-500">
+              {[d.homeCoach && `DT ${d.home}: ${d.homeCoach}`, d.awayCoach && `DT ${d.away}: ${d.awayCoach}`].filter(Boolean).join(' · ')}
+            </div>
+          )}
         </div>
       ) : (
         <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-5 text-center text-sm text-slate-400">

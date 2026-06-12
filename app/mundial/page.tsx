@@ -127,7 +127,7 @@ function LiveBanner({ matches }: { matches: Match[] }) {
 
   if (live) {
     return (
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-red-600/20 to-slate-800 border border-red-500/40 p-5">
+      <Link href={`/mundial/partido?home=${encodeURIComponent(live.home)}&away=${encodeURIComponent(live.away)}`} className="block mb-6 rounded-2xl bg-gradient-to-r from-red-600/20 to-slate-800 border border-red-500/40 p-5 hover:border-red-400/60 transition-colors">
         <div className="flex items-center gap-2 mb-3">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -146,7 +146,7 @@ function LiveBanner({ matches }: { matches: Match[] }) {
             <span className="text-white font-semibold">{live.away}</span>
           </div>
         </div>
-      </div>
+      </Link>
     )
   }
 
@@ -155,8 +155,9 @@ function LiveBanner({ matches }: { matches: Match[] }) {
     const h = Math.floor(diff / 3600000)
     const m = Math.floor((diff % 3600000) / 60000)
     const s = Math.floor((diff % 60000) / 1000)
-    return (
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-purple-600/20 to-slate-800 border border-purple-500/30 p-5">
+    const canLink = upcoming.home && upcoming.away
+    const inner = (
+      <div className="mb-6 rounded-2xl bg-gradient-to-r from-purple-600/20 to-slate-800 border border-purple-500/30 p-5 hover:border-purple-400/50 transition-colors">
         <div className="text-purple-300 text-xs font-bold tracking-wider uppercase mb-3">⏭ Próximo partido</div>
         <div className="flex items-center justify-center gap-4 mb-3">
           <div className="flex items-center gap-2 flex-1 justify-end">
@@ -176,6 +177,9 @@ function LiveBanner({ matches }: { matches: Match[] }) {
         )}
       </div>
     )
+    return canLink
+      ? <Link href={`/mundial/partido?home=${encodeURIComponent(upcoming.home)}&away=${encodeURIComponent(upcoming.away)}`} className="block">{inner}</Link>
+      : inner
   }
   return null
 }
