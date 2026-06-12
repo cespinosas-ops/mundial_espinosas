@@ -56,6 +56,9 @@ function trimPlayer(p: any) {
     red: p.red_card,
     subIn: p.sub_in,
     subOut: p.sub_out,
+    playerId: p.player_id,
+    replacedBy: p.replaced_by_player_id,
+    replaces: p.replaces_player_id,
   }
 }
 

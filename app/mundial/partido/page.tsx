@@ -6,6 +6,7 @@ import Link from 'next/link'
 type P = {
   name: string; number: string; position: string; rating: number | null
   goals: number; yellow: boolean; red: boolean; subIn: number | null; subOut: number | null
+  playerId: number | null; replacedBy: number | null; replaces: number | null
 }
 type Form = { form: string; gf: number; gc: number; avgXg: number; avgXgC: number }
 type Detail = {
@@ -115,18 +116,50 @@ function Pitch({ d }: { d: NonNullable<Detail['lineups']> & { homeName: string; 
   )
 }
 
-function Subs({ team, players }: { team: string; players: P[] }) {
-  const subs = players.filter(p => p.subIn != null)
-  if (!subs.length) return null
+function MiniPlayer({ p, dir }: { p: P; dir: 'in' | 'out' }) {
   return (
-    <div>
-      <div className="text-xs text-slate-500 font-medium mb-1.5">{team} — ingresaron</div>
-      <div className="flex flex-wrap gap-1.5">
-        {subs.map((p, i) => (
-          <span key={i} className="text-xs bg-slate-800 border border-slate-700 rounded-full px-2.5 py-1 text-slate-300">
-            {p.subIn}&apos; #{p.number} {p.name}{p.goals > 0 ? ' ⚽' : ''}{p.yellow ? ' 🟨' : ''}{p.red ? ' 🟥' : ''}
-            {p.rating != null && <span className={`ml-1 rounded px-1 text-[9px] font-bold ${ratingColor(p.rating)}`}>{p.rating}</span>}
-          </span>
+    <span className="inline-flex items-center gap-1">
+      <span className={dir === 'in' ? 'text-emerald-400' : 'text-red-400'}>{dir === 'in' ? '▲' : '▼'}</span>
+      <span className="text-slate-500 font-mono text-[10px]">{p.number}</span>
+      <span className="text-slate-200">{p.name}</span>
+      {p.goals > 0 && <span>{'⚽'.repeat(p.goals)}</span>}
+      {p.yellow && <span>🟨</span>}
+      {p.red && <span>🟥</span>}
+      {p.rating != null && <span className={`rounded px-1 text-[9px] font-bold ${ratingColor(p.rating)}`}>{p.rating}</span>}
+    </span>
+  )
+}
+
+function Subs({ team, players }: { team: string; players: P[] }) {
+  const outs = players.filter(p => p.subOut != null)
+  const ins = players.filter(p => p.subIn != null)
+  const pairs = outs.map(out => {
+    const inP = ins.find(i => i.playerId === out.replacedBy) || ins.find(i => i.replaces === out.playerId)
+    return { out, in: inP, minute: out.subOut }
+  })
+  const matched = new Set(pairs.map(p => p.in?.playerId).filter(Boolean))
+  const orphanIns = ins.filter(i => !matched.has(i.playerId))
+
+  if (!pairs.length && !orphanIns.length) return null
+
+  return (
+    <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-4">
+      <div className="text-sm font-bold text-white mb-3">Cambios — {team}</div>
+      <div className="space-y-2.5">
+        {pairs.map((pr, i) => (
+          <div key={i} className="flex items-center gap-3 text-xs">
+            <span className="text-slate-400 font-mono w-9 shrink-0">{pr.minute}&apos;</span>
+            <div className="flex flex-col gap-0.5">
+              {pr.in && <MiniPlayer p={pr.in} dir="in" />}
+              <MiniPlayer p={pr.out} dir="out" />
+            </div>
+          </div>
+        ))}
+        {orphanIns.map((p, i) => (
+          <div key={'o' + i} className="flex items-center gap-3 text-xs">
+            <span className="text-slate-400 font-mono w-9 shrink-0">{p.subIn}&apos;</span>
+            <MiniPlayer p={p} dir="in" />
+          </div>
         ))}
       </div>
     </div>
