@@ -73,6 +73,12 @@ export default function Home() {
 
   const medals = ['🥇', '🥈', '🥉']
   const played = matches.filter(m => m.result_home !== null)
+  const today = new Date()
+  const todayPlayed = played.filter(m => {
+    if (!m.match_date) return false
+    const d = new Date(m.match_date)
+    return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
+  })
 
   return (
     <div>
@@ -124,11 +130,14 @@ export default function Home() {
       )}
 
       {/* Match results detail */}
-      {played.length > 0 && (
+      {todayPlayed.length > 0 && (
         <div>
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Resultados por partido</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900">Resultados de hoy</h2>
+            <a href="/apuestas" className="text-sm text-purple-600 hover:text-purple-700">Ver todo el historial →</a>
+          </div>
           <div className="space-y-3">
-            {played.map(m => (
+            {todayPlayed.map(m => (
               <div key={m.id} className="bg-white rounded-xl border border-gray-100 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
