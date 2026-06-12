@@ -40,7 +40,10 @@ export default function ApuestasPage() {
           .filter(p => p.player)
       }))
       setMatches(enriched)
-      if (enriched.length > 0) setSelected(enriched[0].id)
+      if (enriched.length > 0) {
+        const next = enriched.find(x => x.result_home === null) ?? enriched[enriched.length - 1]
+        setSelected(next.id)
+      }
       if (gb && players) {
         setGlobalBets(
           gb.map(g => ({ ...g, player: players.find(p => p.id === g.player_id)! }))
