@@ -59,7 +59,7 @@ function trimPlayer(p: any) {
   }
 }
 
-function pctNum(v) {
+function pctNum(v: any): number | null {
   if (typeof v === 'number') return v
   if (typeof v === 'string') {
     const m = v.match(/(\d+)/)
@@ -68,7 +68,7 @@ function pctNum(v) {
   return null
 }
 
-function extractStats(ls) {
+function extractStats(ls: any) {
   const h = ls.home || {}, a = ls.away || {}
   const rows = [
     { key: 'ball_possession', label: 'Posesión', pct: true },
