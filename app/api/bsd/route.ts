@@ -153,6 +153,36 @@ export async function GET(req: Request) {
       })
     }
 
+    if (type === 'team') {
+      const teamName = norm(searchParams.get('name') || '')
+      const matches = await allMatches()
+      const teamMatches = matches.filter(m => norm(m.home_team) === teamName || norm(m.away_team) === teamName)
+      if (!teamMatches.length) return NextResponse.json({ error: 'no encontrado' }, { status: 404 })
+
+      const first = teamMatches[0]
+      const isHome = norm(first.home_team) === teamName
+      const teamObj = isHome ? first.home_team_obj : first.away_team_obj
+
+      const games = teamMatches.map(m => ({
+        id: m.id,
+        home: m.home_team,
+        away: m.away_team,
+        date: m.event_date,
+        status: m.status,
+        homeScore: m.home_score,
+        awayScore: m.away_score,
+        group: m.group_name,
+        round: m.round_name,
+      })).sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+
+      return NextResponse.json({
+        name: teamObj?.name || first.home_team,
+        country: teamObj?.country || null,
+        coach: teamObj?.coach?.name || null,
+        games,
+      })
+    }
+
     return NextResponse.json({ error: 'tipo inválido' }, { status: 400 })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 502 })

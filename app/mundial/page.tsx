@@ -217,13 +217,13 @@ function Grupos({ groups }: { groups: Group[] }) {
                       qualifies ? 'bg-emerald-500/15' : isThird ? 'bg-amber-500/10' : ''
                     }`}>
                       <td className="px-3 py-2.5">
-                        <span className="flex items-center gap-2">
+                        <Link href={`/mundial/seleccion?name=${encodeURIComponent(r.team)}`} className="flex items-center gap-2 hover:text-purple-300 transition-colors">
                           <span className={`w-4 font-medium ${
                             qualifies ? 'text-emerald-400' : isThird ? 'text-amber-400' : 'text-slate-500'
                           }`}>{r.position}</span>
                           <Crest src={r.crest} alt={r.team} />
                           <span className="text-slate-100">{r.team}</span>
-                        </span>
+                        </Link>
                       </td>
                       <td className="text-center text-slate-400">{r.played}</td>
                       <td className="text-center text-slate-400">{r.gd > 0 ? `+${r.gd}` : r.gd}</td>
