@@ -130,38 +130,51 @@ function MiniPlayer({ p, dir }: { p: P; dir: 'in' | 'out' }) {
   )
 }
 
-function Subs({ team, players }: { team: string; players: P[] }) {
-  const outs = players.filter(p => p.subOut != null)
-  const ins = players.filter(p => p.subIn != null)
+function TeamBench({ team, starters, subs, align }: { team: string; starters: P[]; subs: P[]; align: 'left' | 'right' }) {
+  const outs = starters.filter(p => p.subOut != null)
+  const ins = subs.filter(p => p.subIn != null)
   const pairs = outs.map(out => {
     const inP = ins.find(i => i.playerId === out.replacedBy) || ins.find(i => i.replaces === out.playerId)
     return { out, in: inP, minute: out.subOut }
-  })
-  const matched = new Set(pairs.map(p => p.in?.playerId).filter(Boolean))
-  const orphanIns = ins.filter(i => !matched.has(i.playerId))
+  }).sort((a, b) => (a.minute || 0) - (b.minute || 0))
+  const usedIn = new Set(pairs.map(p => p.in?.playerId).filter(Boolean))
+  const benchOnly = subs.filter(p => p.subIn == null && !usedIn.has(p.playerId))
 
-  if (!pairs.length && !orphanIns.length) return null
+  const ta = align === 'right' ? 'text-right' : 'text-left'
 
   return (
     <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-4">
-      <div className="text-sm font-bold text-white mb-3">Cambios — {team}</div>
-      <div className="space-y-2.5">
-        {pairs.map((pr, i) => (
-          <div key={i} className="flex items-center gap-3 text-xs">
-            <span className="text-slate-400 font-mono w-9 shrink-0">{pr.minute}&apos;</span>
-            <div className="flex flex-col gap-0.5">
-              {pr.in && <MiniPlayer p={pr.in} dir="in" />}
-              <MiniPlayer p={pr.out} dir="out" />
-            </div>
+      <div className={`text-sm font-bold text-white mb-3 ${ta}`}>{team}</div>
+
+      {pairs.length > 0 && (
+        <div className="mb-4">
+          <div className={`text-[10px] text-slate-500 uppercase tracking-wider mb-2 ${ta}`}>Cambios</div>
+          <div className="space-y-2">
+            {pairs.map((pr, i) => (
+              <div key={i} className={`flex items-center gap-2 text-xs ${align === 'right' ? 'flex-row-reverse text-right' : ''}`}>
+                <span className="text-slate-400 font-mono shrink-0">{pr.minute}&apos;</span>
+                <div className={`flex flex-col gap-0.5 ${align === 'right' ? 'items-end' : 'items-start'}`}>
+                  {pr.in && <MiniPlayer p={pr.in} dir="in" />}
+                  <MiniPlayer p={pr.out} dir="out" />
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-        {orphanIns.map((p, i) => (
-          <div key={'o' + i} className="flex items-center gap-3 text-xs">
-            <span className="text-slate-400 font-mono w-9 shrink-0">{p.subIn}&apos;</span>
-            <MiniPlayer p={p} dir="in" />
+        </div>
+      )}
+
+      {benchOnly.length > 0 && (
+        <div>
+          <div className={`text-[10px] text-slate-500 uppercase tracking-wider mb-2 ${ta}`}>Banca</div>
+          <div className={`flex flex-wrap gap-1.5 ${align === 'right' ? 'justify-end' : ''}`}>
+            {benchOnly.map((p, i) => (
+              <span key={i} className="text-[11px] text-slate-400">
+                <span className="font-mono text-slate-600">{p.number}</span> {p.name}
+              </span>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
