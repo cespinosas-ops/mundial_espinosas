@@ -23,3 +23,20 @@ body {
   background: var(--bg);
   color: var(--text);
 }
+
+/* Marquesina de la barra de timers — solo en móvil */
+@media (max-width: 639px) {
+  .timer-marquee {
+    overflow: hidden;
+  }
+  .timer-marquee-track {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    animation: timer-scroll 18s linear infinite;
+    will-change: transform;
+  }
+  @keyframes timer-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+}

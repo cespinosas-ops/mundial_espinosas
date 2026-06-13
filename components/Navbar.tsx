@@ -101,21 +101,38 @@ export default function Navbar() {
     <div className="sticky top-0 z-50">
       {/* Barra de countdown */}
       {nextMatches.length > 0 && (
-        <div className="bg-black text-white text-xs px-4 py-1.5 flex items-center gap-4 overflow-x-auto">
-          <span className="text-slate-400 shrink-0">⏱ Cierre apuestas:</span>
-          {nextMatches.map(m => {
-            const locked = isLocked(m.match_date)
-            return (
-              <div key={m.id} className="flex items-center gap-2 shrink-0">
-                <span className={locked ? 'text-red-400 font-medium' : 'text-slate-200'}>
-                  {m.home} vs {m.away}
-                </span>
-                <span className={`font-mono font-bold ${locked ? 'text-red-400' : 'text-emerald-400'}`}>
-                  {locked ? '🔒 Cerrado' : formatCountdown(m.match_date)}
-                </span>
-              </div>
-            )
-          })}
+        <div className="bg-black text-white text-xs py-1.5 timer-marquee overflow-x-auto sm:overflow-x-auto">
+          <div className="timer-marquee-track flex items-center gap-4 px-4 w-max sm:w-auto">
+            <span className="text-slate-400 shrink-0">⏱ Cierre apuestas:</span>
+            {nextMatches.map(m => {
+              const locked = isLocked(m.match_date)
+              return (
+                <div key={m.id} className="flex items-center gap-2 shrink-0">
+                  <span className={locked ? 'text-red-400 font-medium' : 'text-slate-200'}>
+                    {m.home} vs {m.away}
+                  </span>
+                  <span className={`font-mono font-bold ${locked ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {locked ? '🔒 Cerrado' : formatCountdown(m.match_date)}
+                  </span>
+                </div>
+              )
+            })}
+            {/* Copia duplicada para scroll continuo en móvil */}
+            <span className="text-slate-400 shrink-0 sm:hidden" aria-hidden="true">⏱ Cierre apuestas:</span>
+            {nextMatches.map(m => {
+              const locked = isLocked(m.match_date)
+              return (
+                <div key={'dup-' + m.id} className="flex items-center gap-2 shrink-0 sm:hidden" aria-hidden="true">
+                  <span className={locked ? 'text-red-400 font-medium' : 'text-slate-200'}>
+                    {m.home} vs {m.away}
+                  </span>
+                  <span className={`font-mono font-bold ${locked ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {locked ? '🔒 Cerrado' : formatCountdown(m.match_date)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
