@@ -165,6 +165,17 @@ export async function GET(req: Request) {
       })
     }
 
+    if (type === 'teams') {
+      const matches = await allMatches()
+      const set = new Map<string, string>()
+      for (const m of matches) {
+        if (m.home_team) set.set(norm(m.home_team), m.home_team)
+        if (m.away_team) set.set(norm(m.away_team), m.away_team)
+      }
+      const teams = Array.from(set.values()).sort((a, b) => a.localeCompare(b))
+      return NextResponse.json({ teams })
+    }
+
     if (type === 'team') {
       const teamName = norm(searchParams.get('name') || '')
       const matches = await allMatches()
@@ -172,8 +183,8 @@ export async function GET(req: Request) {
       if (!teamMatches.length) return NextResponse.json({ error: 'no encontrado' }, { status: 404 })
 
       const first = teamMatches[0]
-      const isHome = norm(first.home_team) === teamName
-      const teamObj = isHome ? first.home_team_obj : first.away_team_obj
+      const isHomeFirst = norm(first.home_team) === teamName
+      const teamObj = isHomeFirst ? first.home_team_obj : first.away_team_obj
 
       const games = teamMatches.map(m => ({
         id: m.id,
@@ -187,10 +198,42 @@ export async function GET(req: Request) {
         round: m.round_name,
       })).sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 
+      let form: any = null
+      for (const m of teamMatches) {
+        const det = await bsd(`/api/matches/${m.id}/`)
+        const isHome = norm(det.home_team) === teamName
+        const f = isHome ? det.home_form : det.away_form
+        if (f && f.form_string) {
+          form = { form: f.form_string, gf: f.goals_scored_last_n, gc: f.goals_conceded_last_n, avgXg: f.avg_xg, avgXgC: f.avg_xg_conceded }
+          break
+        }
+      }
+
+      let standing: any = null
+      try {
+        const fdRes = await fetch('https://api.football-data.org/v4/competitions/WC/standings', {
+          headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_TOKEN || '5f2a6dcbd7bc46e7b26affc238755223' },
+          next: { revalidate: 120 },
+        })
+        if (fdRes.ok) {
+          const fd = await fdRes.json()
+          for (const s of (fd.standings || [])) {
+            const row = (s.table || []).find((r: any) => norm(r.team?.name) === teamName)
+            if (row) {
+              standing = { group: s.group?.replace('Group', 'Grupo'), position: row.position, played: row.playedGames, won: row.won, draw: row.draw, lost: row.lost, gf: row.goalsFor, ga: row.goalsAgainst, gd: row.goalDifference, points: row.points, crest: row.team?.crest }
+              break
+            }
+          }
+        }
+      } catch {}
+
       return NextResponse.json({
         name: teamObj?.name || first.home_team,
         country: teamObj?.country || null,
         coach: teamObj?.coach?.name || null,
+        crest: standing?.crest || null,
+        standing,
+        form,
         games,
       })
     }

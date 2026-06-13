@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
-type Tab = 'grupos' | 'fixture' | 'knockouts' | 'stats'
+type Tab = 'grupos' | 'fixture' | 'knockouts' | 'stats' | 'selecciones'
 
 type Row = {
   position: number; team: string; tla: string; crest: string
@@ -43,6 +43,10 @@ const KO_ORDER = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_
 
 export default function MundialPage() {
   const [tab, setTab] = useState<Tab>('grupos')
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t && ['grupos','fixture','knockouts','stats','selecciones'].includes(t)) setTab(t as Tab)
+  }, [])
   const [groups, setGroups] = useState<Group[]>([])
   const [scorers, setScorers] = useState<Scorer[]>([])
   const [matches, setMatches] = useState<Match[]>([])
@@ -68,6 +72,7 @@ export default function MundialPage() {
     { id: 'fixture', label: '📅 Fixture' },
     { id: 'knockouts', label: '🏆 Eliminatorias' },
     { id: 'stats', label: '⚽ Goleadores' },
+    { id: 'selecciones', label: '🌎 Selecciones' },
   ]
 
   return (
@@ -100,6 +105,7 @@ export default function MundialPage() {
         {!loading && tab === 'fixture' && <Fixture matches={matches} />}
         {!loading && tab === 'knockouts' && <Knockouts matches={matches} />}
         {!loading && tab === 'stats' && <Stats scorers={scorers} />}
+        {!loading && tab === 'selecciones' && <Selecciones groups={groups} />}
       </main>
     </div>
   )
@@ -373,6 +379,29 @@ function Knockouts({ matches }: { matches: Match[] }) {
 }
 
 // ---------- STATS ----------
+function Selecciones({ groups }: { groups: Group[] }) {
+  const teams = groups.flatMap(g => g.table.map(r => ({ name: r.team, crest: r.crest, group: g.group.replace('Group', 'Grupo') })))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  if (!teams.length) return <p className="text-center text-slate-500 py-8">Cargando selecciones…</p>
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {teams.map(t => (
+        <Link key={t.name} href={`/mundial/seleccion?name=${encodeURIComponent(t.name)}`}
+          className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 hover:border-purple-400/60 hover:bg-slate-800 transition-colors">
+          {t.crest ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={t.crest} alt={t.name} className="w-7 h-7 object-contain shrink-0" />
+          ) : <span className="w-7 h-7 flex items-center justify-center">🏳️</span>}
+          <div className="min-w-0">
+            <div className="text-sm text-slate-100 truncate">{t.name}</div>
+            <div className="text-[10px] text-slate-500">{t.group}</div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 function Stats({ scorers }: { scorers: Scorer[] }) {
   if (!scorers.length) return <p className="text-center text-slate-500 py-8">Aún no hay goleadores registrados.</p>
   return (
