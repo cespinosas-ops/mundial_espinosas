@@ -34,11 +34,23 @@ async function bsd(path: string) {
 }
 
 async function allMatches() {
+  // BSD ignora ?page cuando hay date_from/to y repite la misma página,
+  // asi que deduplicamos por id y recorremos sin confiar en "next".
+  const seen = new Set<number>()
   const out: any[] = []
   let page = 1
-  while (page <= 8) {
+  let prevFirstId: number | null = null
+  while (page <= 6) {
     const data = await bsd(`/api/matches/?league=${LEAGUE}&date_from=2026-06-01&date_to=2026-07-31&page=${page}`)
-    out.push(...(data.results || []))
+    const res = data.results || []
+    if (!res.length) break
+    if (res[0]?.id === prevFirstId) break
+    prevFirstId = res[0]?.id ?? null
+    let added = 0
+    for (const m of res) {
+      if (!seen.has(m.id)) { seen.add(m.id); out.push(m); added++ }
+    }
+    if (added === 0) break
     if (!data.next) break
     page++
   }
