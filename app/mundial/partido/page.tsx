@@ -133,12 +133,18 @@ function MiniPlayer({ p, dir }: { p: P; dir: 'in' | 'out' }) {
 function TeamBench({ team, starters, subs, align }: { team: string; starters: P[]; subs: P[]; align: 'left' | 'right' }) {
   const outs = starters.filter(p => p.subOut != null)
   const ins = subs.filter(p => p.subIn != null)
+  const usedIds = new Set<number>()
   const pairs = outs.map(out => {
-    const inP = ins.find(i => i.playerId === out.replacedBy) || ins.find(i => i.replaces === out.playerId)
+    // 1) por id directo si BSD lo da
+    let inP = ins.find(i => i.playerId != null && !usedIds.has(i.playerId as number) && (i.playerId === out.replacedBy || i.replaces === out.playerId))
+    // 2) respaldo: emparejar por minuto (entró el mismo minuto que salió)
+    if (!inP) inP = ins.find(i => i.playerId != null && !usedIds.has(i.playerId as number) && i.subIn === out.subOut)
+    if (inP?.playerId != null) usedIds.add(inP.playerId as number)
     return { out, in: inP, minute: out.subOut }
   }).sort((a, b) => (a.minute || 0) - (b.minute || 0))
-  const usedIn = new Set(pairs.map(p => p.in?.playerId).filter(Boolean))
-  const benchOnly = subs.filter(p => p.subIn == null && !usedIn.has(p.playerId))
+  // suplentes que entraron pero no se emparejaron con ningún titular
+  const orphanIns = ins.filter(i => i.playerId != null && !usedIds.has(i.playerId as number))
+  const benchOnly = subs.filter(p => p.subIn == null && !usedIds.has(p.playerId as number))
 
   const ta = align === 'right' ? 'text-right' : 'text-left'
 
@@ -157,6 +163,20 @@ function TeamBench({ team, starters, subs, align }: { team: string; starters: P[
                   {pr.in && <MiniPlayer p={pr.in} dir="in" />}
                   <MiniPlayer p={pr.out} dir="out" />
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {orphanIns.length > 0 && (
+        <div className="mb-4">
+          <div className={`text-[10px] text-slate-500 uppercase tracking-wider mb-2 ${ta}`}>Ingresaron</div>
+          <div className="space-y-2">
+            {orphanIns.map((p, i) => (
+              <div key={i} className={`flex items-center gap-2 text-xs ${align === 'right' ? 'flex-row-reverse text-right' : ''}`}>
+                <span className="text-slate-400 font-mono shrink-0">{p.subIn}&apos;</span>
+                <MiniPlayer p={p} dir="in" />
               </div>
             ))}
           </div>
