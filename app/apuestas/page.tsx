@@ -122,8 +122,8 @@ export default function ApuestasPage() {
           )}
 
           {tab === 'partidos' && (
-            <div className="flex gap-4 items-start">
-              <div className="w-60 shrink-0 max-h-[80vh] overflow-y-auto space-y-0.5">
+            <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-start">
+              <div className="w-full lg:w-60 shrink-0 max-h-64 lg:max-h-[80vh] overflow-y-auto space-y-0.5 border-b lg:border-b-0 border-slate-700/50 pb-3 lg:pb-0">
                 {phases.map(phase => (
                   <div key={phase}>
                     <div className="text-xs font-medium text-slate-500 uppercase tracking-wide px-2 py-2">{phase}</div>
@@ -141,7 +141,7 @@ export default function ApuestasPage() {
                 ))}
               </div>
 
-              <div className="flex-1 sticky top-4">
+              <div className="flex-1 lg:sticky lg:top-4 min-w-0">
                 {match && (
                   <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5">
                     <div className="flex items-center gap-2 mb-4 flex-wrap">

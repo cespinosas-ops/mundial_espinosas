@@ -1,6 +1,7 @@
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import ChatWidget from '@/components/ChatWidget'
+import InstallButton from '@/components/InstallButton'
 import type { Viewport } from 'next'
 
 export const metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <ChatWidget />
+        <InstallButton />
       </body>
     </html>
   )
