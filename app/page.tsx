@@ -98,30 +98,30 @@ export default function Home() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-700/50">
-                <th className="text-left text-xs text-slate-500 font-medium px-4 py-3">#</th>
-                <th className="text-left text-xs text-slate-500 font-medium px-4 py-3">Jugador</th>
-                <th className="text-right text-xs text-slate-500 font-medium px-4 py-3 hidden sm:table-cell">Jugados</th>
-                <th className="text-right text-xs text-slate-500 font-medium px-4 py-3 hidden sm:table-cell">Exactos</th>
-                <th className="text-right text-xs text-slate-500 font-medium px-4 py-3">Pts partidos</th>
-                <th className="text-right text-xs text-slate-500 font-medium px-4 py-3">Pts globales</th>
-                <th className="text-right text-xs text-slate-500 font-medium px-4 py-3">Total</th>
+                <th className="text-left text-xs text-slate-500 font-medium px-2 sm:px-4 py-3">#</th>
+                <th className="text-left text-xs text-slate-500 font-medium px-2 sm:px-4 py-3">Jugador</th>
+                <th className="text-right text-xs text-slate-500 font-medium px-2 sm:px-4 py-3 hidden sm:table-cell">Jugados</th>
+                <th className="text-right text-xs text-slate-500 font-medium px-2 sm:px-4 py-3 hidden sm:table-cell">Exactos</th>
+                <th className="text-right text-xs text-slate-500 font-medium px-2 sm:px-4 py-3"><span className="sm:hidden">Part.</span><span className="hidden sm:inline">Pts partidos</span></th>
+                <th className="text-right text-xs text-slate-500 font-medium px-2 sm:px-4 py-3"><span className="sm:hidden">Glob.</span><span className="hidden sm:inline">Pts globales</span></th>
+                <th className="text-right text-xs text-slate-500 font-medium px-2 sm:px-4 py-3">Total</th>
               </tr>
             </thead>
             <tbody>
               {standings.map((s, i) => (
                 <tr key={s.player.id} className={`border-b border-slate-700/40 last:border-0 ${i === 0 ? 'bg-purple-500/10' : ''}`}>
-                  <td className="px-4 py-3 text-sm text-slate-400">{medals[i] ?? i + 1}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3 text-sm text-slate-400">{medals[i] ?? i + 1}</td>
+                  <td className="px-2 sm:px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{s.player.emoji}</span>
+                      <span className="text-lg shrink-0">{s.player.emoji}</span>
                       <span className="font-medium text-sm text-white">{s.player.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right text-sm text-slate-500 hidden sm:table-cell">{s.played}</td>
-                  <td className="px-4 py-3 text-right text-sm text-slate-500 hidden sm:table-cell">{s.exact}</td>
-                  <td className="px-4 py-3 text-right text-sm text-slate-300">{s.matchPts}</td>
-                  <td className="px-4 py-3 text-right text-sm text-slate-300">{s.globalPts}</td>
-                  <td className="px-4 py-3 text-right font-bold text-purple-400">{s.total}</td>
+                  <td className="px-2 sm:px-4 py-3 text-right text-sm text-slate-500 hidden sm:table-cell">{s.played}</td>
+                  <td className="px-2 sm:px-4 py-3 text-right text-sm text-slate-500 hidden sm:table-cell">{s.exact}</td>
+                  <td className="px-2 sm:px-4 py-3 text-right text-sm text-slate-300">{s.matchPts}</td>
+                  <td className="px-2 sm:px-4 py-3 text-right text-sm text-slate-300">{s.globalPts}</td>
+                  <td className="px-2 sm:px-4 py-3 text-right font-bold text-purple-400">{s.total}</td>
                 </tr>
               ))}
             </tbody>
