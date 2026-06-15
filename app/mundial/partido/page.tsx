@@ -239,6 +239,18 @@ function Content() {
       .catch(() => { setErr('Error al cargar el partido.'); setLoading(false) })
   }, [home, away])
 
+  useEffect(() => {
+    const isLive = d?.status === 'inprogress' || d?.status === 'live' || d?.status === 'halftime'
+    if (!isLive || !home || !away) return
+    const id = setInterval(() => {
+      fetch(`/api/bsd?type=find&home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`)
+        .then(r => r.json())
+        .then(j => { if (!j.error) setD(j) })
+        .catch(() => {})
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [d?.status, home, away])
+
   if (loading) return <p className="text-center text-slate-500 py-16">Cargando partido…</p>
   if (err || !d) return (
     <div className="text-center py-16">
@@ -247,7 +259,7 @@ function Content() {
     </div>
   )
 
-  const live = d.status === 'inprogress' || d.status === 'live'
+  const live = d.status === 'inprogress' || d.status === 'live' || d.status === 'halftime'
   const done = d.status === 'finished'
 
   return (
