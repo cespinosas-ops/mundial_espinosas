@@ -238,6 +238,27 @@ export async function GET(req: Request) {
       })
     }
 
+    if (type === 'live') {
+      const today = new Date().toISOString().slice(0, 10)
+      const data = await bsd(`/api/matches/?league=${LEAGUE}&date_from=${today}&date_to=${today}`)
+      const results = data.results || []
+      const liveMatch = results.find((m: any) =>
+        m.status === 'inprogress' || m.status === 'live' || m.status === 'halftime'
+      )
+      if (!liveMatch) return NextResponse.json({ live: null })
+      return NextResponse.json({
+        live: {
+          id: liveMatch.id,
+          home: liveMatch.home_team,
+          away: liveMatch.away_team,
+          homeScore: liveMatch.home_score,
+          awayScore: liveMatch.away_score,
+          minute: liveMatch.current_minute,
+          status: liveMatch.status,
+        }
+      })
+    }
+
     return NextResponse.json({ error: 'tipo inválido' }, { status: 400 })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 502 })

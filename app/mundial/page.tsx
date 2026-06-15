@@ -119,21 +119,47 @@ function Crest({ src, alt, big = false }: { src: string; alt: string; big?: bool
 }
 
 // ---------- LIVE / PRÓXIMO ----------
+type BsdLive = { id: number; home: string; away: string; homeScore: number; awayScore: number; minute: number | null; status: string } | null
+
 function LiveBanner({ matches }: { matches: Match[] }) {
   const [, tick] = useState(0)
+  const [bsdLive, setBsdLive] = useState<BsdLive | undefined>(undefined)
+
   useEffect(() => {
     const i = setInterval(() => tick(t => t + 1), 1000)
     return () => clearInterval(i)
   }, [])
 
-  const live = matches.find(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
+  useEffect(() => {
+    fetch('/api/bsd?type=live')
+      .then(r => r.json())
+      .then(d => setBsdLive(d.live ?? null))
+      .catch(() => setBsdLive(null))
+    const iv = setInterval(() => {
+      fetch('/api/bsd?type=live')
+        .then(r => r.json())
+        .then(d => setBsdLive(d.live ?? null))
+        .catch(() => {})
+    }, 60000)
+    return () => clearInterval(iv)
+  }, [])
+
+  const fdLive = matches.find(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
+  const live = bsdLive === undefined ? fdLive : bsdLive
+
   const upcoming = matches
     .filter(m => m.status === 'TIMED' || m.status === 'SCHEDULED')
     .sort((a, b) => a.utcDate.localeCompare(b.utcDate))[0]
 
   if (live) {
+    const liveHome = live.home
+    const liveAway = live.away
+    const liveHomeGoals = 'homeScore' in live ? live.homeScore : live.homeGoals
+    const liveAwayGoals = 'homeScore' in live ? live.awayScore : live.awayGoals
+    const liveHomeCrest = ('homeCrest' in live ? live.homeCrest : undefined) ?? ''
+    const liveAwayCrest = ('awayCrest' in live ? live.awayCrest : undefined) ?? ''
     return (
-      <Link href={`/mundial/partido?home=${encodeURIComponent(live.home)}&away=${encodeURIComponent(live.away)}`} className="block mb-6 rounded-2xl bg-gradient-to-r from-red-600/20 to-slate-800 border border-red-500/40 p-5 hover:border-red-400/60 transition-colors">
+      <Link href={`/mundial/partido?home=${encodeURIComponent(liveHome)}&away=${encodeURIComponent(liveAway)}`} className="block mb-6 rounded-2xl bg-gradient-to-r from-red-600/20 to-slate-800 border border-red-500/40 p-5 hover:border-red-400/60 transition-colors">
         <div className="flex items-center gap-2 mb-3">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -143,13 +169,13 @@ function LiveBanner({ matches }: { matches: Match[] }) {
         </div>
         <div className="flex items-center justify-center gap-4">
           <div className="flex items-center gap-2 flex-1 justify-end">
-            <span className="text-white font-semibold">{live.home}</span>
-            <Crest src={live.homeCrest} alt={live.home} big />
+            <span className="text-white font-semibold">{liveHome}</span>
+            <Crest src={liveHomeCrest} alt={liveHome} big />
           </div>
-          <div className="text-2xl font-bold text-white px-3">{live.homeGoals}-{live.awayGoals}</div>
+          <div className="text-2xl font-bold text-white px-3">{liveHomeGoals ?? '-'}-{liveAwayGoals ?? '-'}</div>
           <div className="flex items-center gap-2 flex-1">
-            <Crest src={live.awayCrest} alt={live.away} big />
-            <span className="text-white font-semibold">{live.away}</span>
+            <Crest src={liveAwayCrest} alt={liveAway} big />
+            <span className="text-white font-semibold">{liveAway}</span>
           </div>
         </div>
       </Link>
