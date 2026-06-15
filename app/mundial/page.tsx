@@ -52,6 +52,8 @@ export default function MundialPage() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [bsdLive, setBsdLive] = useState<BsdLive | undefined>(undefined)
+  const [bsdLiveAll, setBsdLiveAll] = useState<BsdLiveEntry[] | undefined>(undefined)
 
   useEffect(() => {
     Promise.all([
@@ -65,6 +67,18 @@ export default function MundialPage() {
       if (g.error || s.error || m.error) setErr('No se pudieron cargar algunos datos del Mundial.')
       setLoading(false)
     }).catch(() => { setErr('Error al cargar datos del Mundial.'); setLoading(false) })
+  }, [])
+
+  useEffect(() => {
+    const fetchBsd = () => {
+      fetch('/api/bsd?type=live')
+        .then(r => r.json())
+        .then(d => { setBsdLive(d.live ?? null); setBsdLiveAll(d.liveAll ?? []) })
+        .catch(() => { setBsdLive(null); setBsdLiveAll([]) })
+    }
+    fetchBsd()
+    const iv = setInterval(fetchBsd, 60000)
+    return () => clearInterval(iv)
   }, [])
 
   const tabs: { id: Tab; label: string }[] = [
@@ -83,7 +97,7 @@ export default function MundialPage() {
           <p className="text-sm text-slate-400 mt-1">Grupos, partidos, eliminatorias y goleadores en vivo</p>
         </div>
 
-        <LiveBanner matches={matches} />
+        <LiveBanner matches={matches} bsdLive={bsdLive} />
 
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           {tabs.map(t => (
@@ -102,8 +116,8 @@ export default function MundialPage() {
         {err && !loading && <p className="text-center text-amber-400 py-4 text-sm">{err}</p>}
 
         {!loading && tab === 'grupos' && <Grupos groups={groups} />}
-        {!loading && tab === 'fixture' && <Fixture matches={matches} />}
-        {!loading && tab === 'knockouts' && <Knockouts matches={matches} />}
+        {!loading && tab === 'fixture' && <Fixture matches={matches} bsdLiveAll={bsdLiveAll} />}
+        {!loading && tab === 'knockouts' && <Knockouts matches={matches} bsdLiveAll={bsdLiveAll} />}
         {!loading && tab === 'stats' && <Stats scorers={scorers} />}
         {!loading && tab === 'selecciones' && <Selecciones groups={groups} />}
       </main>
@@ -120,28 +134,18 @@ function Crest({ src, alt, big = false }: { src: string; alt: string; big?: bool
 
 // ---------- LIVE / PRÓXIMO ----------
 type BsdLive = { id: number; home: string; away: string; homeScore: number; awayScore: number; minute: number | null; status: string } | null
+type BsdLiveEntry = { home: string; away: string; status: string }
 
-function LiveBanner({ matches }: { matches: Match[] }) {
+function normFE(n: string) {
+  return (n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/'/g, '').trim()
+}
+
+function LiveBanner({ matches, bsdLive }: { matches: Match[]; bsdLive?: BsdLive }) {
   const [, tick] = useState(0)
-  const [bsdLive, setBsdLive] = useState<BsdLive | undefined>(undefined)
 
   useEffect(() => {
     const i = setInterval(() => tick(t => t + 1), 1000)
     return () => clearInterval(i)
-  }, [])
-
-  useEffect(() => {
-    fetch('/api/bsd?type=live')
-      .then(r => r.json())
-      .then(d => setBsdLive(d.live ?? null))
-      .catch(() => setBsdLive(null))
-    const iv = setInterval(() => {
-      fetch('/api/bsd?type=live')
-        .then(r => r.json())
-        .then(d => setBsdLive(d.live ?? null))
-        .catch(() => {})
-    }, 60000)
-    return () => clearInterval(iv)
   }, [])
 
   const fdLive = matches.find(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
@@ -315,9 +319,12 @@ function Grupos({ groups }: { groups: Group[] }) {
 }
 
 // ---------- MATCH ROW ----------
-function MatchRow({ m }: { m: Match }) {
+function MatchRow({ m, bsdLiveAll }: { m: Match; bsdLiveAll?: BsdLiveEntry[] }) {
   const done = m.status === 'FINISHED'
-  const live = m.status === 'IN_PLAY' || m.status === 'PAUSED'
+  const fdLive = m.status === 'IN_PLAY' || m.status === 'PAUSED'
+  const live = bsdLiveAll !== undefined
+    ? bsdLiveAll.some(bl => normFE(bl.home) === normFE(m.home) && normFE(bl.away) === normFE(m.away))
+    : fdLive
   const href = m.home && m.away ? `/mundial/partido?home=${encodeURIComponent(m.home)}&away=${encodeURIComponent(m.away)}` : null
   const Row = (
     <div className={`flex items-center gap-3 px-4 py-4 text-sm border-t border-slate-700/40 first:border-t-0 ${live ? 'bg-red-500/5' : ''} ${href ? 'hover:bg-slate-800/80 cursor-pointer transition-colors' : ''}`}>
@@ -343,7 +350,7 @@ function MatchRow({ m }: { m: Match }) {
 }
 
 // ---------- FIXTURE ----------
-function Fixture({ matches }: { matches: Match[] }) {
+function Fixture({ matches, bsdLiveAll }: { matches: Match[]; bsdLiveAll?: BsdLiveEntry[] }) {
   const byDay: Record<number, Match[]> = {}
   matches.filter(m => m.stage === 'GROUP_STAGE').forEach(m => {
     (byDay[m.matchday] ||= []).push(m)
@@ -367,14 +374,14 @@ function Fixture({ matches }: { matches: Match[] }) {
         ))}
       </div>
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-        {byDay[current].sort((a, b) => a.utcDate.localeCompare(b.utcDate)).map(m => <MatchRow key={m.id} m={m} />)}
+        {byDay[current].sort((a, b) => a.utcDate.localeCompare(b.utcDate)).map(m => <MatchRow key={m.id} m={m} bsdLiveAll={bsdLiveAll} />)}
       </div>
     </div>
   )
 }
 
 // ---------- KNOCKOUTS ----------
-function Knockouts({ matches }: { matches: Match[] }) {
+function Knockouts({ matches, bsdLiveAll }: { matches: Match[]; bsdLiveAll?: BsdLiveEntry[] }) {
   const ko = matches.filter(m => m.stage !== 'GROUP_STAGE')
   const byStage: Record<string, Match[]> = {}
   ko.forEach(m => { (byStage[m.stage] ||= []).push(m) })
@@ -398,7 +405,7 @@ function Knockouts({ matches }: { matches: Match[] }) {
       </div>
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
         <div className="bg-slate-800 px-4 py-2.5 font-bold text-white text-sm">{STAGE_LABELS[current] || current}</div>
-        {byStage[current].sort((a, b) => a.utcDate.localeCompare(b.utcDate)).map(m => <MatchRow key={m.id} m={m} />)}
+        {byStage[current].sort((a, b) => a.utcDate.localeCompare(b.utcDate)).map(m => <MatchRow key={m.id} m={m} bsdLiveAll={bsdLiveAll} />)}
       </div>
     </div>
   )

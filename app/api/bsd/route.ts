@@ -242,12 +242,12 @@ export async function GET(req: Request) {
       const today = new Date().toISOString().slice(0, 10)
       const data = await bsd(`/api/matches/?league=${LEAGUE}&date_from=${today}&date_to=${today}`)
       const results = data.results || []
-      const liveMatch = results.find((m: any) =>
+      const liveMatches = results.filter((m: any) =>
         m.status === 'inprogress' || m.status === 'live' || m.status === 'halftime'
       )
-      if (!liveMatch) return NextResponse.json({ live: null })
+      const liveMatch = liveMatches[0] || null
       return NextResponse.json({
-        live: {
+        live: liveMatch ? {
           id: liveMatch.id,
           home: liveMatch.home_team,
           away: liveMatch.away_team,
@@ -255,7 +255,12 @@ export async function GET(req: Request) {
           awayScore: liveMatch.away_score,
           minute: liveMatch.current_minute,
           status: liveMatch.status,
-        }
+        } : null,
+        liveAll: liveMatches.map((m: any) => ({
+          home: m.home_team,
+          away: m.away_team,
+          status: m.status,
+        })),
       })
     }
 
