@@ -180,7 +180,7 @@ export default function ApuestasPage() {
                                   <div className="text-sm font-medium text-white">{pred.player.name}</div>
                                   <div className="text-xs text-slate-400 mt-0.5">
                                     {pickLabel(pred, match)}
-                                    {pred.home_goals !== null ? ' · ' + pred.home_goals + '-' + pred.away_goals : ''}
+                                    {(pred.home_goals !== null || pred.away_goals !== null) ? ' · ' + (pred.home_goals ?? '?') + '-' + (pred.away_goals ?? '?') : ''}
                                     {ud ? ' ⚡' : ''}
                                   </div>
                                 </div>

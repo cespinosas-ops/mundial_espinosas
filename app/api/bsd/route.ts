@@ -239,28 +239,23 @@ export async function GET(req: Request) {
     }
 
     if (type === 'live') {
-      const today = new Date().toISOString().slice(0, 10)
-      const data = await bsd(`/api/matches/?league=${LEAGUE}&date_from=${today}&date_to=${today}`)
-      const results = data.results || []
-      const liveMatches = results.filter((m: any) =>
-        m.status === 'inprogress' || m.status === 'live' || m.status === 'halftime'
-      )
-      const liveMatch = liveMatches[0] || null
+      const LIVE = new Set(['inprogress','live','1st_half','2nd_half','halftime','ht','extra_time','et','et_halftime','penalties','pen','break','interrupted','awaiting_extra_time','1h','2h'])
+      const matches = await allMatches()
+      const liveMatches = matches.filter((m: any) => LIVE.has(String(m.status || '').toLowerCase()))
+      if (!liveMatches.length) return NextResponse.json({ live: null, liveKeys: [] })
+      const liveKeys = liveMatches.map((m: any) => ({ home: norm(m.home_team), away: norm(m.away_team) }))
+      const lm = liveMatches[0]
       return NextResponse.json({
-        live: liveMatch ? {
-          id: liveMatch.id,
-          home: liveMatch.home_team,
-          away: liveMatch.away_team,
-          homeScore: liveMatch.home_score,
-          awayScore: liveMatch.away_score,
-          minute: liveMatch.current_minute,
-          status: liveMatch.status,
-        } : null,
-        liveAll: liveMatches.map((m: any) => ({
-          home: m.home_team,
-          away: m.away_team,
-          status: m.status,
-        })),
+        live: {
+          id: lm.id,
+          home: lm.home_team,
+          away: lm.away_team,
+          homeScore: lm.home_score,
+          awayScore: lm.away_score,
+          minute: lm.current_minute,
+          status: lm.status,
+        },
+        liveKeys,
       })
     }
 
