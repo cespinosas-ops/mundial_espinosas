@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin, checkAdminSecret } from '@/lib/supabaseAdmin'
 import { calculateMatchPoints } from '@/lib/fifa'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: Request) {
   if (!checkAdminSecret(req)) {
     return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
