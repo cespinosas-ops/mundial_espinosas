@@ -126,5 +126,14 @@ export async function GET() {
     sincronizados.push(`${match.home} ${homeGoals}-${awayGoals} ${match.away}`)
   }
 
-  return NextResponse.json({ ok: true, sincronizados: sincronizados.length, detalle: sincronizados })
+  return NextResponse.json({
+    ok: true,
+    sincronizados: sincronizados.length,
+    detalle: sincronizados,
+    debug: {
+      pendientes: pendientes.map((p: any) => `${p.home} vs ${p.away}`),
+      bsdCount: bsdMatches.length,
+      bsdSample: bsdMatches.map((m: any) => `${m.home_team} vs ${m.away_team} [${m.status}]`),
+    },
+  })
 }
