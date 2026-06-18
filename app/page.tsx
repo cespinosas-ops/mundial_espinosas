@@ -19,7 +19,13 @@ export default function Home() {
   const [matches, setMatches] = useState<MatchWithPreds[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    // Dispara la sincronización de resultados en el servidor (silenciosa),
+    // luego carga la tabla ya actualizada. El candado de 2 min evita saturar.
+    fetch('/api/sync-resultados')
+      .catch(() => {})
+      .finally(() => { load() })
+  }, [])
 
   async function load() {
     setLoading(true)
