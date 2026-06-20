@@ -81,6 +81,11 @@ export default function JugadorPage() {
     const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
     const existing = predictions[matchId]
     const updated = { ...existing, player_id: targetId, match_id: matchId, [field]: value }
+    // Blindaje null: si un gol tiene valor y el otro quedo vacio -> el vacio va a 0
+    const _h = updated.home_goals
+    const _a = updated.away_goals
+    if (_h != null && _a == null) updated.away_goals = 0
+    if (_a != null && _h == null) updated.home_goals = 0
     const { data, error } = await supabase
       .from('predictions')
       .upsert({ ...updated, points_earned: 0 }, { onConflict: 'player_id,match_id' })
