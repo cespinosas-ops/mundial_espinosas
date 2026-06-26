@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, Match, Prediction, GlobalBet, Config } from '@/lib/supabase'
 
@@ -10,6 +10,10 @@ export default function JugadorPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [matches, setMatches] = useState<Match[]>([])
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({})
+  // Espejo siempre-fresco de predictions: lo usa savePrediction para no armar
+  // el upsert desde una foto vieja del estado (evita que guardados rapidos se pisen)
+  const predictionsRef = useRef<Record<string, Prediction>>({})
+  useEffect(() => { predictionsRef.current = predictions }, [predictions])
   const [globalBet, setGlobalBet] = useState<Partial<GlobalBet>>({})
   const [config, setConfig] = useState<Config | null>(null)
   const [tab, setTab] = useState<'partidos' | 'global'>('partidos')
@@ -79,23 +83,36 @@ export default function JugadorPage() {
   async function savePrediction(matchId: string, field: string, value: string | number | null) {
     if (!session) return
     const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
-    const existing = predictions[matchId]
+    const existing = predictionsRef.current[matchId]
     const updated = { ...existing, player_id: targetId, match_id: matchId, [field]: value }
     // Blindaje null: si un gol tiene valor y el otro quedo vacio -> el vacio va a 0
     const _h = updated.home_goals
     const _a = updated.away_goals
     if (_h != null && _a == null) updated.away_goals = 0
     if (_a != null && _h == null) updated.home_goals = 0
+    // Optimista + sincronico: refleja YA en el ref (y en pantalla) antes de esperar
+    // la red, asi un segundo guardado disparado al toque se acumula sobre este y no lo pisa
+    predictionsRef.current = { ...predictionsRef.current, [matchId]: updated as Prediction }
+    setPredictions(prev => ({ ...prev, [matchId]: updated as Prediction }))
     const { data, error } = await supabase
       .from('predictions')
       .upsert({ ...updated, points_earned: 0 }, { onConflict: 'player_id,match_id' })
       .select().single()
-    if (!error && data) setPredictions(prev => ({ ...prev, [matchId]: data }))
+    if (error) {
+      alert('No se pudo guardar tu predicción. Revisá tu conexión e intentá de nuevo.')
+      return
+    }
+    if (data) {
+      predictionsRef.current = { ...predictionsRef.current, [matchId]: data }
+      setPredictions(prev => ({ ...prev, [matchId]: data }))
+    }
   }
 
   async function clearPrediction(matchId: string) {
     if (!session) return
     const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
+    const next = { ...predictionsRef.current }; delete next[matchId]
+    predictionsRef.current = next
     await supabase.from('predictions').delete().eq('player_id', targetId).eq('match_id', matchId)
     setPredictions(prev => { const n = { ...prev }; delete n[matchId]; return n })
   }
@@ -104,10 +121,14 @@ export default function JugadorPage() {
     if (!session) return
     const targetId = (session.isAdmin && adminTarget) ? adminTarget : session.playerId
     const updated = { ...globalBet, player_id: targetId, [field]: value }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('global_bets')
       .upsert({ ...updated, points_earned: 0 }, { onConflict: 'player_id' })
       .select().single()
+    if (error) {
+      alert('No se pudo guardar tu apuesta. Revisá tu conexión e intentá de nuevo.')
+      return
+    }
     if (data) setGlobalBet(data)
   }
 
