@@ -95,6 +95,10 @@ export async function GET() {
     })
     if (!found) continue
     if (found.status !== 'finished') continue
+    // Regla eliminatoria: las apuestas se liquidan por los 90'. Si el partido fue a
+    // alargue o penales, BSD marca extra_time_score/penalty_shootout y home_score/away_score
+    // puede incluir el alargue -> no auto-liquidamos; el 90' se carga a mano por admin.
+    if (found.extra_time_score != null || found.penalty_shootout != null) continue
     if (found.home_score == null || found.away_score == null) continue
 
     const sameOrder = norm(found.home_team) === h

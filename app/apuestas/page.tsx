@@ -19,7 +19,8 @@ type GlobalBetWithPlayer = {
 export default function ApuestasPage() {
   const [matches, setMatches] = useState<MatchWithPreds[]>([])
   const [globalBets, setGlobalBets] = useState<GlobalBetWithPlayer[]>([])
-  const [selected, setSelected] = useState<string>('')
+  const [selectedPhase, setSelectedPhase] = useState<string>('')
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [tab, setTab] = useState<'partidos' | 'globales'>('partidos')
   const [loading, setLoading] = useState(true)
 
@@ -42,7 +43,7 @@ export default function ApuestasPage() {
       setMatches(enriched)
       if (enriched.length > 0) {
         const next = enriched.find(x => x.result_home === null) ?? enriched[enriched.length - 1]
-        setSelected(next.id)
+        setSelectedPhase(next.phase)
       }
       if (gb && players) {
         setGlobalBets(
@@ -61,8 +62,20 @@ export default function ApuestasPage() {
     return 'Empate'
   }
 
+  function toggle(id: string) {
+    setExpanded(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id); else n.add(id)
+      return n
+    })
+  }
+
+  function fmtDate(d: string | null) {
+    return d ? new Date(d).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
+  }
+
   const phases = Array.from(new Set(matches.map(m => m.phase)))
-  const match = matches.find(m => m.id === selected)
+  const phaseMatches = matches.filter(m => m.phase === selectedPhase)
 
   return (
     <div>
@@ -122,83 +135,105 @@ export default function ApuestasPage() {
           )}
 
           {tab === 'partidos' && (
-            <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-start">
-              <div className="w-full lg:w-60 shrink-0 max-h-64 lg:max-h-[80vh] overflow-y-auto space-y-0.5 border-b lg:border-b-0 border-slate-700/50 pb-3 lg:pb-0">
-                {phases.map(phase => (
-                  <div key={phase}>
-                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide px-2 py-2">{phase}</div>
-                    {matches.filter(m => m.phase === phase).map(m => (
-                      <button key={m.id} onClick={() => setSelected(m.id)}
-                        className={"w-full text-left px-3 py-2 rounded-lg text-sm transition-all " + (selected === m.id ? 'bg-purple-600 text-white' : 'hover:bg-slate-800 text-slate-300')}>
-                        <div className="font-medium leading-tight">{m.home} vs {m.away}</div>
-                        <div className={"text-xs mt-0.5 " + (selected === m.id ? 'text-purple-200' : 'text-slate-500')}>
-                          {m.match_date ? new Date(m.match_date).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
-                          {m.result_home !== null ? ' · ' + m.result_home + '-' + m.result_away : ''}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ))}
+            <>
+              <div className="flex flex-wrap gap-2 mb-5">
+                {phases.map(phase => {
+                  const count = matches.filter(m => m.phase === phase).length
+                  const active = selectedPhase === phase
+                  return (
+                    <button key={phase} onClick={() => setSelectedPhase(phase)}
+                      className={"px-3 py-1.5 rounded-full text-sm font-medium transition-all " + (active ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200')}>
+                      {phase} <span className={active ? 'text-purple-200' : 'text-slate-600'}>{count}</span>
+                    </button>
+                  )
+                })}
               </div>
 
-              <div className="flex-1 lg:sticky lg:top-4 min-w-0">
-                {match && (
-                  <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-5">
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
-                      <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{match.phase}</span>
-                      {match.match_date && <span className="text-xs text-slate-500">{new Date(match.match_date).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
-                      {match.result_home !== null && <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-medium">Resultado: {match.result_home} - {match.result_away}</span>}
-                      {match.underdog && <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">No fav: {match.underdog === 'home' ? match.home : match.away}</span>}
-                    </div>
-                    <div className="grid grid-cols-3 items-center mb-5">
-                      <div className="text-center">
-                        <div className="font-semibold text-white">{match.home}</div>
-                        {match.home_ranking && <div className="text-xs text-slate-500">#{match.home_ranking} FIFA</div>}
-                      </div>
-                      <div className="text-center">
-                        {match.result_home !== null
-                          ? <div className="text-2xl font-bold text-white">{match.result_home} - {match.result_away}</div>
-                          : <div className="text-slate-600 text-sm">vs</div>}
-                      </div>
-                      <div className="text-center">
-                        <div className="font-semibold text-white">{match.away}</div>
-                        {match.away_ranking && <div className="text-xs text-slate-500">#{match.away_ranking} FIFA</div>}
-                      </div>
-                    </div>
-                    {match.predictions.length === 0 ? (
-                      <div className="text-center py-8 text-slate-500 text-sm">Nadie ha apostado aún</div>
-                    ) : (
-                      <div className="space-y-2">
-                        {match.predictions.map(pred => {
-                          const won = (pred.points_earned ?? 0) > 0
-                          const ud = !!(match.underdog && pred.picked_team === match.underdog)
-                          return (
-                            <div key={pred.id} className={"flex items-center justify-between px-4 py-3 rounded-lg border " + (won ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-900/50 border-transparent')}>
-                              <div className="flex items-center gap-3">
-                                <span className="text-lg">{pred.player.emoji}</span>
-                                <div>
-                                  <div className="text-sm font-medium text-white">{pred.player.name}</div>
-                                  <div className="text-xs text-slate-400 mt-0.5">
-                                    {pickLabel(pred, match)}
-                                    {(pred.home_goals !== null || pred.away_goals !== null) ? ' · ' + (pred.home_goals ?? 0) + '-' + (pred.away_goals ?? 0) : ''}
-                                    {ud ? ' ⚡' : ''}
-                                  </div>
-                                </div>
-                              </div>
-                              {match.result_home !== null && (
-                                <div className={"font-semibold text-lg " + (won ? 'text-emerald-400' : 'text-slate-600')}>
-                                  +{pred.points_earned ?? 0}
-                                </div>
-                              )}
+              {phaseMatches.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 text-sm">No hay partidos en esta fase todavía</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                  {phaseMatches.map(m => {
+                    const isOpen = expanded.has(m.id)
+                    const played = m.result_home !== null
+                    const n = m.predictions.length
+                    return (
+                      <div key={m.id} className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+                        <div className="p-4">
+                          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                            <span className="text-xs text-slate-500">{fmtDate(m.match_date)}</span>
+                            {played
+                              ? <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-medium">Final {m.result_home}-{m.result_away}</span>
+                              : <span className="text-xs bg-slate-700/50 text-slate-400 px-2 py-0.5 rounded-full">Por jugarse</span>}
+                          </div>
+                          <div className="grid grid-cols-3 items-center gap-2">
+                            <div className="text-center min-w-0">
+                              <div className="font-semibold text-white truncate">{m.home}</div>
+                              {m.home_ranking && <div className="text-xs text-slate-500">#{m.home_ranking} FIFA</div>}
                             </div>
-                          )
-                        })}
+                            <div className="text-center">
+                              {played
+                                ? <div className="text-xl font-bold text-white">{m.result_home}-{m.result_away}</div>
+                                : <div className="text-slate-600 text-sm">vs</div>}
+                            </div>
+                            <div className="text-center min-w-0">
+                              <div className="font-semibold text-white truncate">{m.away}</div>
+                              {m.away_ranking && <div className="text-xs text-slate-500">#{m.away_ranking} FIFA</div>}
+                            </div>
+                          </div>
+                          {m.underdog && (
+                            <div className="text-xs text-amber-300/90 text-center mt-3">⚡ No favorito: {m.underdog === 'home' ? m.home : m.away}</div>
+                          )}
+                        </div>
+
+                        <button onClick={() => toggle(m.id)}
+                          className="w-full flex items-center justify-between px-4 py-3 border-t border-slate-700/50 text-sm text-slate-300 hover:bg-slate-800/60 transition-colors">
+                          <span>{n === 0 ? 'Sin apuestas' : n + (n === 1 ? ' apuesta' : ' apuestas')}</span>
+                          <svg className={"w-4 h-4 text-slate-500 transition-transform " + (isOpen ? 'rotate-180' : '')} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+
+                        {isOpen && (
+                          <div className="px-4 pb-4">
+                            {n === 0 ? (
+                              <div className="text-center py-4 text-slate-500 text-sm">Nadie ha apostado aún</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {m.predictions.map(pred => {
+                                  const won = (pred.points_earned ?? 0) > 0
+                                  const ud = !!(m.underdog && pred.picked_team === m.underdog)
+                                  return (
+                                    <div key={pred.id} className={"flex items-center justify-between px-3 py-2.5 rounded-lg border " + (won ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-900/50 border-transparent')}>
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <span className="text-lg shrink-0">{pred.player.emoji}</span>
+                                        <div className="min-w-0">
+                                          <div className="text-sm font-medium text-white truncate">{pred.player.name}</div>
+                                          <div className="text-xs text-slate-400 mt-0.5">
+                                            {pickLabel(pred, m)}
+                                            {(pred.home_goals !== null || pred.away_goals !== null) ? ' · ' + (pred.home_goals ?? 0) + '-' + (pred.away_goals ?? 0) : ''}
+                                            {ud ? ' ⚡' : ''}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {played && (
+                                        <div className={"font-semibold text-lg shrink-0 ml-2 " + (won ? 'text-emerald-400' : 'text-slate-600')}>
+                                          +{pred.points_earned ?? 0}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
