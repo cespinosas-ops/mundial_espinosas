@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { calculateMatchPoints } from '@/lib/fifa'
+import { calculateMatchPoints, determineUnderdog } from '@/lib/fifa'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,6 +62,52 @@ async function allMatches() {
   return out
 }
 
+const FD_TOKEN = process.env.FOOTBALL_DATA_TOKEN || '5f2a6dcbd7bc46e7b26affc238755223'
+const STAGE_TO_PHASE: Record<string, string> = {
+  LAST_32: 'Dieciseisavos',
+  LAST_16: 'Octavos',
+  QUARTER_FINALS: 'Cuartos',
+  SEMI_FINALS: 'Semis',
+  THIRD_PLACE: 'Tercer puesto',
+  FINAL: 'Final',
+}
+
+// Crea en la tabla los partidos de eliminatoria que football-data ya tenga definidos
+// (equipos reales, no placeholders). Idempotente: deduplica por el par de equipos.
+async function autoPopulateKnockout(supabaseAdmin: any): Promise<string[]> {
+  let data: any
+  try {
+    const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
+      headers: { 'X-Auth-Token': FD_TOKEN }, next: { revalidate: 60 },
+    })
+    if (!res.ok) return []
+    data = await res.json()
+  } catch { return [] }
+
+  const { data: existing } = await supabaseAdmin.from('matches').select('home, away')
+  const have = new Set<string>((existing || []).map((m: any) => [norm(m.home), norm(m.away)].sort().join('|')))
+
+  const inserted: string[] = []
+  for (const m of (data.matches || [])) {
+    const phase = STAGE_TO_PHASE[m.stage as string]
+    if (!phase) continue
+    const h: string | undefined = m.homeTeam?.name
+    const a: string | undefined = m.awayTeam?.name
+    if (!h || !a) continue // cruce todavia sin definir
+    const key = [norm(h), norm(a)].sort().join('|')
+    if (have.has(key)) continue
+    const { underdog, homeRanking, awayRanking } = determineUnderdog(h, a)
+    const { error } = await supabaseAdmin.from('matches').insert({
+      home: h, away: a, phase,
+      match_date: m.utcDate ?? null,
+      home_ranking: homeRanking, away_ranking: awayRanking,
+      underdog: underdog ?? null,
+    })
+    if (!error) { have.add(key); inserted.push(`${h} vs ${a} (${phase})`) }
+  }
+  return inserted
+}
+
 export async function GET() {
   const now = Date.now()
   if (now - lastSync < SYNC_COOLDOWN_MS) {
@@ -71,11 +117,13 @@ export async function GET() {
 
   const supabaseAdmin = getSupabaseAdmin()
 
+  const nuevos = await autoPopulateKnockout(supabaseAdmin)
+
   const { data: pendientes, error: pErr } = await supabaseAdmin
     .from('matches').select('*').is('result_home', null)
   if (pErr) return NextResponse.json({ error: 'error leyendo partidos' }, { status: 500 })
   if (!pendientes || pendientes.length === 0) {
-    return NextResponse.json({ ok: true, sincronizados: 0, mensaje: 'nada pendiente' })
+    return NextResponse.json({ ok: true, sincronizados: 0, nuevos: nuevos.length, fixtures: nuevos, mensaje: 'nada pendiente' })
   }
 
   const { data: cfgRows } = await supabaseAdmin.from('config').select('*').eq('id', 1)
@@ -130,5 +178,5 @@ export async function GET() {
     sincronizados.push(`${match.home} ${homeGoals}-${awayGoals} ${match.away}`)
   }
 
-  return NextResponse.json({ ok: true, sincronizados: sincronizados.length, detalle: sincronizados })
+  return NextResponse.json({ ok: true, nuevos: nuevos.length, fixtures: nuevos, sincronizados: sincronizados.length, detalle: sincronizados })
 }
