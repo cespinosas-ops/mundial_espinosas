@@ -19,6 +19,7 @@ const ALIASES: Record<string, string> = {
   'korea republic': 'south korea',
   'czech republic': 'czechia',
   'cote divoire': 'ivory coast',
+  'congo dr': 'dr congo',
   'cabo verde': 'cape verde',
   'cabo verde islands': 'cape verde',
   'cape verde islands': 'cape verde',
