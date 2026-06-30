@@ -72,23 +72,37 @@ const STAGE_TO_PHASE: Record<string, string> = {
   FINAL: 'Final',
 }
 
-// Crea en la tabla los partidos de eliminatoria que football-data ya tenga definidos
-// (equipos reales, no placeholders). Idempotente: deduplica por el par de equipos.
-async function autoPopulateKnockout(supabaseAdmin: any): Promise<string[]> {
-  let data: any
+const KNOCKOUT_PHASES = new Set<string>(Object.values(STAGE_TO_PHASE))
+
+// Trae los partidos del Mundial desde football-data (una sola vez por corrida).
+async function fetchFdMatches(): Promise<any[]> {
   try {
     const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
       headers: { 'X-Auth-Token': FD_TOKEN }, next: { revalidate: 60 },
     })
     if (!res.ok) return []
-    data = await res.json()
+    const data = await res.json()
+    return data.matches || []
   } catch { return [] }
+}
 
+// Resultado a los 90' desde football-data: si hubo alargue/penales usa regularTime.
+function fd90(score: any): { home: number; away: number } | null {
+  if (!score) return null
+  const board = (score.duration && score.duration !== 'REGULAR' && score.regularTime)
+    ? score.regularTime : score.fullTime
+  if (!board || board.home == null || board.away == null) return null
+  return { home: board.home, away: board.away }
+}
+
+// Crea en la tabla los partidos de eliminatoria que football-data ya tenga definidos
+// (equipos reales, no placeholders). Idempotente: deduplica por el par de equipos.
+async function autoPopulateKnockout(supabaseAdmin: any, fdMatches: any[]): Promise<string[]> {
   const { data: existing } = await supabaseAdmin.from('matches').select('home, away')
   const have = new Set<string>((existing || []).map((m: any) => [norm(m.home), norm(m.away)].sort().join('|')))
 
   const inserted: string[] = []
-  for (const m of (data.matches || [])) {
+  for (const m of fdMatches) {
     const phase = STAGE_TO_PHASE[m.stage as string]
     if (!phase) continue
     const h: string | undefined = m.homeTeam?.name
@@ -117,7 +131,13 @@ export async function GET() {
 
   const supabaseAdmin = getSupabaseAdmin()
 
-  const nuevos = await autoPopulateKnockout(supabaseAdmin)
+  const fdMatches = await fetchFdMatches()
+  const nuevos = await autoPopulateKnockout(supabaseAdmin, fdMatches)
+  const fdByPair = new Map<string, any>()
+  for (const m of fdMatches) {
+    const fh = m.homeTeam?.name, fa = m.awayTeam?.name
+    if (fh && fa) fdByPair.set([norm(fh), norm(fa)].sort().join('|'), m)
+  }
 
   const { data: pendientes, error: pErr } = await supabaseAdmin
     .from('matches').select('*').is('result_home', null)
@@ -131,27 +151,36 @@ export async function GET() {
   if (!config) return NextResponse.json({ error: 'config no encontrada' }, { status: 500 })
 
   let bsdMatches: any[] = []
-  try { bsdMatches = await allMatches() } catch { return NextResponse.json({ error: 'error BSD' }, { status: 502 }) }
+  try { bsdMatches = await allMatches() } catch { bsdMatches = [] }
 
   const sincronizados: string[] = []
 
   for (const match of pendientes) {
     const h = norm(match.home), a = norm(match.away)
-    const found = bsdMatches.find((m: any) => {
-      const bh = norm(m.home_team), ba = norm(m.away_team)
-      return (bh === h && ba === a) || (bh === a && ba === h)
-    })
-    if (!found) continue
-    if (found.status !== 'finished') continue
-    // Regla eliminatoria: las apuestas se liquidan por los 90'. Si el partido fue a
-    // alargue o penales, BSD marca extra_time_score/penalty_shootout y home_score/away_score
-    // puede incluir el alargue -> no auto-liquidamos; el 90' se carga a mano por admin.
-    if (found.extra_time_score != null || found.penalty_shootout != null) continue
-    if (found.home_score == null || found.away_score == null) continue
+    let homeGoals: number, awayGoals: number
 
-    const sameOrder = norm(found.home_team) === h
-    const homeGoals = sameOrder ? found.home_score : found.away_score
-    const awayGoals = sameOrder ? found.away_score : found.home_score
+    if (KNOCKOUT_PHASES.has(match.phase)) {
+      // Eliminatoria -> football-data, liquidacion por los 90' (regularTime si hubo alargue/penales)
+      const fm = fdByPair.get([h, a].sort().join('|'))
+      if (!fm || fm.status !== 'FINISHED') continue
+      const board = fd90(fm.score)
+      if (!board) continue
+      const sameOrder = norm(fm.homeTeam?.name) === h
+      homeGoals = sameOrder ? board.home : board.away
+      awayGoals = sameOrder ? board.away : board.home
+    } else {
+      // Grupos -> BSD
+      const found = bsdMatches.find((m: any) => {
+        const bh = norm(m.home_team), ba = norm(m.away_team)
+        return (bh === h && ba === a) || (bh === a && ba === h)
+      })
+      if (!found) continue
+      if (found.status !== 'finished') continue
+      if (found.home_score == null || found.away_score == null) continue
+      const sameOrder = norm(found.home_team) === h
+      homeGoals = sameOrder ? found.home_score : found.away_score
+      awayGoals = sameOrder ? found.away_score : found.home_score
+    }
 
     await supabaseAdmin.from('matches')
       .update({ result_home: homeGoals, result_away: awayGoals }).eq('id', match.id)
