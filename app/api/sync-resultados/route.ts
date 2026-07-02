@@ -90,10 +90,18 @@ async function fetchFdMatches(): Promise<any[]> {
 // Resultado a los 90' desde football-data: si hubo alargue/penales usa regularTime.
 function fd90(score: any): { home: number; away: number } | null {
   if (!score) return null
-  const board = (score.duration && score.duration !== 'REGULAR' && score.regularTime)
-    ? score.regularTime : score.fullTime
-  if (!board || board.home == null || board.away == null) return null
-  return { home: board.home, away: board.away }
+  // 1) regularTime si viene poblado (caso penales: Germany 1-1)
+  const rt = score.regularTime
+  if (rt && rt.home != null && rt.away != null) return { home: rt.home, away: rt.away }
+  const ft = score.fullTime
+  if (!ft || ft.home == null || ft.away == null) return null
+  // 2) regularTime null pero hubo alargue -> 90' = fullTime - extraTime (caso Belgium 3-2 -> 2-2)
+  const et = score.extraTime
+  if (et && et.home != null && et.away != null) {
+    return { home: ft.home - et.home, away: ft.away - et.away }
+  }
+  // 3) partido normal
+  return { home: ft.home, away: ft.away }
 }
 
 // Crea en la tabla los partidos de eliminatoria que football-data ya tenga definidos
